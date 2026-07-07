@@ -1,0 +1,1717 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>অগ্রযাত্রা</title>
+<style>
+    *{box-sizing:border-box}
+    body{margin:0;background:transparent}
+    #pdx-wrap{
+        background:transparent;
+        padding:0;
+        color:#111827;
+    }
+    #pdx-wrap *{box-sizing:border-box;}
+
+    #pdx-wrap .pdx-container{
+        max-width:760px;
+        margin:0 auto;
+        padding:14px;
+    }
+
+    #pdx-wrap .pdx-notice{
+        background:rgba(255,255,255,.96);
+        border:1px solid #fde68a;
+        color:#92400e;
+        padding:11px 14px;
+        border-radius:14px;
+        text-align:center;
+        font-weight:800;
+        font-size:14px;
+        box-shadow:0 6px 16px rgba(0,0,0,.04);
+        margin-bottom:16px;
+    }
+
+    #pdx-wrap .pdx-header{
+        text-align:center;
+        margin-bottom:18px;
+    }
+    #pdx-wrap .pdx-header h2{
+        font-size:clamp(22px,4vw,30px);
+        font-weight:900;
+        line-height:1.12;
+        margin:0 0 8px 0;
+        color:#1d4ed8;
+        letter-spacing:-.2px;
+    }
+    #pdx-wrap .pdx-header p{
+        margin:0;
+        color:#64748b;
+        font-size:14.5px;
+    }
+
+    #pdx-wrap .pdx-card{
+        display:none;
+        background:rgba(255,255,255,.98);
+        border:1px solid #e5e7eb;
+        border-radius:18px;
+        box-shadow:0 8px 20px rgba(15,23,42,.06);
+        padding:18px;
+        margin-bottom:14px;
+        overflow:hidden;
+        transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    #pdx-wrap .pdx-card.active{
+        display:block;
+        border-color:#3b82f6;
+        box-shadow:0 12px 28px rgba(59,130,246,.12);
+        transform:translateY(-1px);
+    }
+    #pdx-wrap .pdx-card.show-all{display:block;}
+
+    #pdx-wrap .pdx-top{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        margin-bottom:14px;
+    }
+    #pdx-wrap .pdx-title{
+        font-size:15px;
+        font-weight:800;
+        color:#111827;
+    }
+    #pdx-wrap .pdx-badge{
+        font-size:12.5px;
+        font-weight:800;
+        color:#1d4ed8;
+        background:linear-gradient(180deg,#dbeafe,#eff6ff);
+        padding:6px 12px;
+        border-radius:999px;
+        white-space:nowrap;
+        border:1px solid #bfdbfe;
+    }
+
+    #pdx-wrap .pdx-income{
+        font-size:clamp(24px,4.3vw,30px);
+        font-weight:900;
+        color:#0f172a;
+        line-height:1;
+        margin:2px 0 4px;
+        letter-spacing:-.3px;
+    }
+    #pdx-wrap .pdx-sub{
+        color:#64748b;
+        font-size:13.5px;
+        margin-bottom:14px;
+    }
+
+    #pdx-wrap .pdx-bar{
+        width:100%;
+        height:11px;
+        background:#edf2f7;
+        border-radius:999px;
+        overflow:hidden;
+        margin:12px 0 8px;
+    }
+    #pdx-wrap .pdx-fill{
+        height:100%;
+        border-radius:999px;
+        background:linear-gradient(90deg,#16a34a,#2563eb);
+        transition:width .35s ease;
+    }
+    #pdx-wrap .pdx-foot{
+        font-size:13px;
+        color:#64748b;
+        font-weight:700;
+        margin-bottom:12px;
+    }
+
+    #pdx-wrap .pdx-interactive{margin-top:10px;}
+
+    .pdx-timer-container{
+        display:flex;
+        justify-content:center;
+        gap:10px;
+        flex-wrap:wrap;
+        margin:10px 0 10px;
+    }
+    .pdx-timer-box,
+    .pdx-ms-box{
+        min-width:78px;
+        padding:12px 14px;
+        border-radius:16px;
+        text-align:center;
+        color:#fff;
+        box-shadow:0 8px 18px rgba(15,23,42,.10);
+    }
+    .pdx-timer-box{background:linear-gradient(145deg,#172033,#334155);}
+    .pdx-ms-box{
+        background:linear-gradient(145deg,#f97316,#ef4444);
+        animation:heartbeat .9s infinite ease-in-out;
+    }
+    .pdx-timer-digit{
+        font-size:34px;
+        font-weight:900;
+        line-height:1;
+        letter-spacing:1px;
+    }
+    .pdx-timer-label{
+        font-size:11px;
+        font-weight:700;
+        opacity:.9;
+        margin-top:4px;
+        letter-spacing:.8px;
+    }
+    @keyframes heartbeat{
+        0%,100%{transform:scale(1)}
+        50%{transform:scale(1.06)}
+    }
+
+    .pdx-stage-wrap{
+        margin:8px auto 10px;
+        max-width:420px;
+    }
+    .pdx-stage-title{
+        text-align:center;
+        font-size:12.5px;
+        font-weight:800;
+        color:#475569;
+        margin-bottom:7px;
+    }
+    .pdx-stage-strip{
+        display:grid;
+        grid-template-columns:repeat(3,1fr);
+        gap:6px;
+    }
+    .pdx-stage-strip span{
+        display:block;
+        height:9px;
+        border-radius:999px;
+        background:#e2e8f0;
+        overflow:hidden;
+        position:relative;
+    }
+    .pdx-stage-strip span.on{
+        background:linear-gradient(90deg,#38bdf8,#2563eb);
+    }
+
+    #pdx-wrap .pdx-audio-wrap{
+        margin-top:12px;
+        padding:12px;
+        border-radius:16px;
+        background:linear-gradient(180deg,#f8fbff,#eef6ff);
+        border:1px solid #dbeafe;
+    }
+    #pdx-wrap .pdx-audio-btn{
+        width:100%;
+        border:none;
+        cursor:pointer;
+        border-radius:999px;
+        padding:12px 18px;
+        font-size:14px;
+        font-weight:800;
+        color:#fff;
+        background:linear-gradient(90deg,#2563eb,#1d4ed8);
+        box-shadow:0 8px 18px rgba(37,99,235,.18);
+        transition:transform .16s ease, box-shadow .16s ease;
+    }
+    #pdx-wrap .pdx-audio-btn:hover{
+        transform:translateY(-1px);
+        box-shadow:0 11px 22px rgba(37,99,235,.22);
+    }
+    #pdx-wrap .pdx-audio-btn.playing{
+        background:linear-gradient(90deg,#059669,#16a34a);
+    }
+    #pdx-wrap .pdx-audio-panel{
+        display:none;
+        margin-top:12px;
+        padding:12px;
+        border-radius:14px;
+        background:#fff;
+        border:1px solid #dbeafe;
+    }
+    #pdx-wrap .pdx-audio-panel.expanded{display:block;    }
+    #pdx-wrap .pdx-level-details{
+        margin-bottom:12px;
+        padding:12px;
+        border-radius:12px;
+        background:#f8fafc;
+        border:1px solid #e2e8f0;
+    }
+    #pdx-wrap .pdx-level-heading{
+        font-size:14px;
+        font-weight:900;
+        color:#1e40af;
+        margin-bottom:10px;
+        padding-bottom:8px;
+        border-bottom:2px solid #dbeafe;
+    }
+    #pdx-wrap .pdx-task-section{
+        margin-bottom:12px;
+        padding:12px;
+        border-radius:14px;
+        background:#f8fafc;
+        border:1px solid #e2e8f0;
+    }
+    #pdx-wrap .pdx-task-heading{
+        font-size:14px;
+        font-weight:900;
+        color:#1e40af;
+        margin-bottom:10px;
+        padding-bottom:8px;
+        border-bottom:2px solid #dbeafe;
+    }
+    #pdx-wrap .pdx-task-item{
+        font-size:13px;
+        font-weight:600;
+        color:#334155;
+        padding:6px 10px 6px 24px;
+        position:relative;
+        line-height:1.6;
+    }
+    #pdx-wrap .pdx-task-item::before{
+        content:"☐";
+        position:absolute;
+        left:4px;
+        color:#94a3b8;
+        font-size:14px;
+    }
+    #pdx-wrap .pdx-level-member{
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:8px;
+        padding:7px 0;
+        border-bottom:1px solid #f1f5f9;
+    }
+    #pdx-wrap .pdx-level-member:last-child{border-bottom:none;}
+    #pdx-wrap .pdx-level-member-name{
+        font-size:13px;
+        font-weight:700;
+        color:#111827;
+        flex-shrink:0;
+    }
+    #pdx-wrap .pdx-level-member-phone{
+        font-size:12px;
+        font-weight:600;
+        color:#2563eb;
+        text-decoration:none;
+        padding:4px 10px;
+        border-radius:8px;
+        background:#eff6ff;
+        white-space:nowrap;
+    }
+    #pdx-wrap .pdx-level-member-phone:hover{background:#dbeafe;}
+    #pdx-wrap .pdx-level-member-role{
+        font-size:12px;
+        font-weight:600;
+        color:#64748b;
+        padding:4px 8px;
+        border-radius:6px;
+        background:#f1f5f9;
+        white-space:nowrap;
+        flex-shrink:0;
+    }
+    #pdx-wrap .pdx-level-loading{
+        font-size:12px;
+        color:#94a3b8;
+        text-align:center;
+        padding:8px;
+    }
+    #pdx-wrap .pdx-level-empty{
+        font-size:12px;
+        color:#94a3b8;
+        text-align:center;
+        padding:8px;
+    }
+    #pdx-wrap .pdx-panel-text{
+        margin-top:10px;
+        font-size:13.5px;
+        line-height:1.7;
+        color:#334155;
+    }
+
+    #pdx-wrap .pdx-next-note{
+        margin-top:12px;
+        border-radius:16px;
+        padding:12px 14px;
+        background:linear-gradient(180deg,#fafafa,#f8fafc);
+        border:1px dashed #d1d5db;
+        color:#64748b;
+        font-size:13.5px;
+        font-weight:700;
+        text-align:center;
+        line-height:1.6;
+    }
+
+    #pdx-wrap .pdx-team-progress{
+        margin-top:14px;
+        padding:16px;
+        border-radius:18px;
+        color:#fff;
+        background:linear-gradient(135deg,#1e3a8a,#3b82f6);
+        box-shadow:0 10px 20px rgba(30,58,138,.18);
+        text-align:center;
+    }
+    #pdx-wrap .pdx-team-progress .label{
+        font-size:14px;
+        font-weight:800;
+        opacity:.95;
+        margin-bottom:6px;
+    }
+    #pdx-wrap .pdx-team-progress .count{
+        font-size:clamp(38px,7vw,48px);
+        font-weight:900;
+        line-height:1;
+        margin-bottom:8px;
+    }
+    #pdx-wrap .pdx-team-progress .status{
+        font-size:13.5px;
+        line-height:1.55;
+        opacity:.96;
+    }
+
+    #pdx-wrap .pdx-extend-btn,
+    #pdx-show-all{
+        border:none;
+        cursor:pointer;
+        font-weight:800;
+        font-size:14px;
+        border-radius:14px;
+        transition:transform .16s ease, box-shadow .16s ease, filter .16s ease;
+    }
+    #pdx-wrap .pdx-extend-btn{
+        width:100%;
+        margin-top:12px;
+        padding:13px 16px;
+        color:#fff;
+        background:linear-gradient(90deg,#f59e0b,#ef4444);
+        box-shadow:0 8px 18px rgba(239,68,68,.14);
+    }
+    #pdx-wrap .pdx-extend-btn:hover{filter:brightness(1.02)}
+    #pdx-show-all{
+        display:block;
+        width:100%;
+        max-width:310px;
+        margin:20px auto 0;
+        padding:14px 18px;
+        color:#fff;
+        background:linear-gradient(90deg,#60a5fa,#2563eb);
+        box-shadow:0 10px 22px rgba(37,99,235,.18);
+    }
+    #pdx-show-all:hover{
+        transform:translateY(-1px);
+        box-shadow:0 13px 25px rgba(37,99,235,.22);
+    }
+
+    #pdx-wrap .pdx-winner{
+        margin-top:14px;
+        padding:16px;
+        border-radius:18px;
+        font-weight:800;
+        color:#9a3412;
+        background:linear-gradient(135deg,#fff7ed,#ffedd5);
+        border:1px solid #fdba74;
+        line-height:1.7;
+    }
+    #pdx-wrap .pdx-winner-grid{
+        display:grid;
+        grid-template-columns:1fr 1fr 1fr;
+        gap:12px;
+        margin-top:12px;
+    }
+    #pdx-wrap .pdx-winner-box{
+        background:rgba(255,255,255,.8);
+        border:1px solid rgba(249,115,22,.18);
+        border-radius:16px;
+        padding:14px;
+        text-align:center;
+        box-shadow:0 6px 14px rgba(15,23,42,.04);
+    }
+    #pdx-wrap .pdx-winner-label{
+        font-size:12.5px;
+        color:#7c2d12;
+        font-weight:800;
+        margin-bottom:6px;
+    }
+    #pdx-wrap .pdx-winner-value{
+        font-size:20px;
+        color:#111827;
+        font-weight:900;
+        line-height:1.2;
+    }
+    #pdx-wrap .pdx-winner-note{
+        margin-top:8px;
+        font-size:12px;
+        color:#7c2d12;
+        font-weight:700;
+        opacity:.9;
+    }
+
+    .pdx-compact-note{
+        margin-top:10px;
+        padding:10px 12px;
+        border-radius:14px;
+        background:#f8fafc;
+        border:1px solid #e2e8f0;
+        color:#475569;
+        font-size:13px;
+        text-align:center;
+        line-height:1.6;
+        font-weight:700;
+    }
+
+    @media (max-width:640px){
+        #pdx-wrap .pdx-container{padding:10px;}
+        #pdx-wrap .pdx-card{padding:15px;border-radius:16px;}
+        #pdx-wrap .pdx-top{align-items:flex-start;}
+        #pdx-wrap .pdx-badge{font-size:12px;padding:5px 10px;}
+        .pdx-timer-box,.pdx-ms-box{
+            min-width:70px;
+            padding:11px 12px;
+            border-radius:14px;
+        }
+        .pdx-timer-digit{font-size:30px;}
+        #pdx-wrap .pdx-winner-grid{grid-template-columns:1fr;}
+    }
+
+    /* ===== Wizard Overlay ===== */
+    #pdx-wizard-overlay{
+        position:fixed;inset:0;z-index:99999;
+        background:rgba(15,23,42,.72);
+        display:flex;align-items:center;justify-content:center;
+        padding:16px;
+    }
+    #pdx-wizard-overlay.hidden{display:none;}
+    .pdx-wizard{
+        width:100%;max-width:480px;
+        background:#fff;border-radius:24px;
+        padding:28px 24px 24px;
+        box-shadow:0 24px 60px rgba(0,0,0,.25);
+        animation:pdxWizIn .3s ease;
+        color:#0f172a;
+    }
+    @keyframes pdxWizIn{
+        from{opacity:0;transform:translateY(20px) scale(.96)}
+        to{opacity:1;transform:translateY(0) scale(1)}
+    }
+    .pdx-wizard h3{
+        font-size:20px;font-weight:900;color:#0f172a;
+        margin:0 0 18px;text-align:center;line-height:1.35;
+    }
+    .pdx-wizard .pdx-wiz-sub{
+        font-size:13.5px;color:#64748b;font-weight:700;
+        text-align:center;margin:-10px 0 18px;
+    }
+    .pdx-duration-options{
+        display:grid;grid-template-columns:repeat(5,1fr);
+        gap:10px;margin-bottom:22px;
+    }
+    .pdx-duration-options label{
+        display:flex;flex-direction:column;align-items:center;
+        gap:6px;cursor:pointer;padding:14px 6px;
+        border-radius:16px;border:2px solid #e2e8f0;
+        background:#f8fafc;transition:all .16s;
+        font-weight:800;font-size:14px;color:#475569;
+    }
+    .pdx-duration-options label:hover{border-color:#93c5fd;background:#eff6ff;}
+    .pdx-duration-options label .pdx-unit{
+        font-size:11px;font-weight:600;color:#94a3b8;
+    }
+    .pdx-duration-options input{display:none;}
+    .pdx-duration-options input:checked+span{color:#1d4ed8;}
+    .pdx-duration-options input:checked~.pdx-unit{color:#1d4ed8;}
+    .pdx-duration-options input:checked+span+.pdx-unit{color:#1d4ed8;}
+    .pdx-duration-options label:has(input:checked){
+        border-color:#3b82f6;background:#eff6ff;
+        box-shadow:0 0 0 3px rgba(59,130,246,.15);
+    }
+    .pdx-duration-options label:has(input:checked) .pdx-dur-label{color:#1d4ed8;}
+    .pdx-duration-options label:has(input:checked) .pdx-unit{color:#2563eb;}
+    .pdx-dur-label{font-size:18px;font-weight:900;color:#0f172a;}
+
+    .pdx-wiz-time-wrap{
+        margin-bottom:22px;
+    }
+    .pdx-wiz-time-wrap select{
+        width:100%;padding:14px 16px;font-size:16px;font-weight:700;
+        border:2px solid #e2e8f0;border-radius:14px;
+        background:#f8fafc;color:#0f172a;
+        cursor:pointer;outline:none;transition:border-color .16s;
+        -webkit-appearance:none;appearance:none;
+    }
+    .pdx-wiz-time-wrap select:focus{border-color:#3b82f6;}
+    .pdx-wiz-nav{
+        display:flex;gap:12px;margin-top:18px;
+    }
+    .pdx-wiz-nav button{
+        flex:1;border:none;cursor:pointer;
+        padding:13px;border-radius:14px;
+        font-size:14px;font-weight:800;
+        transition:transform .12s ease,box-shadow .12s ease;
+    }
+    .pdx-wiz-nav button:active{transform:scale(.97);}
+    .pdx-wiz-btn-primary{
+        background:#2563eb;
+        background:linear-gradient(90deg,#2563eb,#1d4ed8);
+        color:#fff;box-shadow:0 6px 16px rgba(37,99,235,.18);
+    }
+    .pdx-wiz-btn-primary:hover{box-shadow:0 8px 20px rgba(37,99,235,.22);}
+    .pdx-wiz-btn-secondary{
+        background:#f1f5f9;color:#475569;
+    }
+    .pdx-wiz-btn-secondary:hover{background:#e2e8f0;}
+
+    .pdx-wiz-confirm-box{
+        background:linear-gradient(180deg,#f0f9ff,#e0f2fe);
+        border:2px solid #bae6fd;border-radius:16px;
+        padding:20px;text-align:center;margin-bottom:6px;
+    }
+    .pdx-wiz-confirm-box .pdx-wiz-time-range{
+        font-size:24px;font-weight:900;color:#0f172a;
+        margin:8px 0 4px;
+    }
+    .pdx-wiz-confirm-box .pdx-wiz-dur{
+        font-size:14px;color:#475569;font-weight:700;
+    }
+    .pdx-wiz-error{
+        color:#dc2626;font-size:13px;font-weight:700;
+        text-align:center;margin:8px 0 0;display:none;
+    }
+
+    #pdx-edit-timing{
+        display:block;width:100%;max-width:310px;
+        margin:14px auto 0;padding:12px 16px;
+        border:none;cursor:pointer;font-weight:800;font-size:14px;
+        border-radius:14px;color:#1d4ed8;
+        background:linear-gradient(180deg,#dbeafe,#eff6ff);
+        border:1px solid #bfdbfe;
+        transition:transform .14s ease;
+    }
+    #pdx-edit-timing:hover{transform:translateY(-1px);}
+
+    #pdx-pending-notice{
+        margin:12px 0;padding:12px 14px;
+        border-radius:14px;background:#fffbeb;
+        border:1px solid #fde68a;color:#92400e;
+        font-size:13.5px;font-weight:700;text-align:center;
+        line-height:1.6;
+    }
+    #pdx-pending-notice.hidden{display:none;}
+
+    /* ===== Segment Timer for Target 0 ===== */
+    .pdx-seg-wrap{
+        margin:12px 0 8px;
+        padding:14px;
+        border-radius:16px;
+        background:linear-gradient(180deg,#f0f9ff,#e0f2fe);
+        border:1px solid #bae6fd;
+    }
+    .pdx-seg-header{
+        display:flex;align-items:center;justify-content:space-between;
+        margin-bottom:8px;
+    }
+    .pdx-seg-label{
+        font-size:15px;font-weight:900;color:#0369a1;
+    }
+    .pdx-seg-badge{
+        font-size:12px;font-weight:800;padding:4px 10px;
+        border-radius:999px;background:#38bdf8;color:#fff;
+    }
+    .pdx-seg-bar-wrap{
+        width:100%;height:10px;
+        background:#e0f2fe;border-radius:999px;
+        overflow:hidden;margin:8px 0;
+    }
+    .pdx-seg-bar-fill{
+        height:100%;border-radius:999px;
+        background:linear-gradient(90deg,#0ea5e9,#2563eb);
+        transition:width .3s ease;
+    }
+    .pdx-seg-bar-fill.danger{background:linear-gradient(90deg,#f97316,#ef4444);}
+    .pdx-seg-timer{
+        font-size:32px;font-weight:900;color:#0f172a;
+        text-align:center;letter-spacing:1px;margin:6px 0;
+        font-variant-numeric:tabular-nums;
+    }
+    .pdx-seg-task{
+        text-align:center;font-size:13px;font-weight:700;
+        color:#475569;padding:6px 10px;
+        border-radius:10px;background:#f8fafc;
+        border:1px solid #e2e8f0;margin-top:6px;
+    }
+    .pdx-seg-task.done{color:#16a34a;border-color:#bbf7d0;background:#f0fdf4;}
+    .pdx-seg-saved{
+        text-align:center;font-size:12px;font-weight:700;
+        color:#2563eb;margin-top:6px;
+    }
+    .pdx-seg-retry-notice{
+        text-align:center;font-size:14px;font-weight:800;
+        color:#dc2626;padding:10px 12px;
+        border-radius:12px;background:#fef2f2;
+        border:1px solid #fecaca;margin-top:8px;
+        animation:pdxPulse .8s ease-in-out 3;
+    }
+    @keyframes pdxPulse{
+        0%,100%{opacity:1;transform:scale(1)}
+        50%{opacity:.7;transform:scale(1.03)}
+    }
+    .pdx-seg-all-done{
+        text-align:center;padding:16px;border-radius:16px;
+        background:linear-gradient(180deg,#f0fdf4,#dcfce7);
+        border:1px solid #bbf7d0;margin-top:10px;
+    }
+    .pdx-seg-all-done .pdx-seg-done-icon{font-size:40px;}
+    .pdx-seg-all-done .pdx-seg-done-text{
+        font-size:15px;font-weight:800;color:#16a34a;margin-top:6px;
+    }
+
+
+</style>
+</head>
+<body>
+<div id="pdx-wizard-overlay">
+    <div class="pdx-wizard">
+        <!-- Step 1: Duration -->
+        <div class="pdx-wizard-step" data-step="1">
+            <h3>আপনি প্রতিদিন কত ঘণ্টা<br>কাজ করতে চান?</h3>
+            <p class="pdx-wiz-sub">সর্বনিম্ন ৪ ঘণ্টা থেকে সর্বোচ্চ ৮ ঘণ্টা</p>
+            <div class="pdx-duration-options">
+                <label><input type="radio" name="wiz_duration" value="4"><span class="pdx-dur-label">৪</span><span class="pdx-unit">ঘণ্টা</span></label>
+                <label><input type="radio" name="wiz_duration" value="5"><span class="pdx-dur-label">৫</span><span class="pdx-unit">ঘণ্টা</span></label>
+                <label><input type="radio" name="wiz_duration" value="6"><span class="pdx-dur-label">৬</span><span class="pdx-unit">ঘণ্টা</span></label>
+                <label><input type="radio" name="wiz_duration" value="7"><span class="pdx-dur-label">৭</span><span class="pdx-unit">ঘণ্টা</span></label>
+                <label><input type="radio" name="wiz_duration" value="8"><span class="pdx-dur-label">৮</span><span class="pdx-unit">ঘণ্টা</span></label>
+            </div>
+            <div class="pdx-wiz-nav">
+                <button class="pdx-wiz-btn-primary pdx-wiz-next" style="width:100%" data-to="2">পরবর্তী</button>
+            </div>
+            <div class="pdx-wiz-error" id="pdx-wiz-error-1">অনুগ্রহ করে একটি সময় বাছাই করুন</div>
+        </div>
+
+        <!-- Step 2: Start Time -->
+        <div class="pdx-wizard-step" data-step="2" style="display:none">
+            <h3>আপনি কোন সময় থেকে<br>কাজ শুরু করতে চান?</h3>
+            <p class="pdx-wiz-sub">আপনার পছন্দের শুরু সময় নির্বাচন করুন</p>
+            <div class="pdx-wiz-time-wrap">
+                <select id="wiz-start-hour"></select>
+            </div>
+            <div class="pdx-wiz-nav">
+                <button class="pdx-wiz-btn-secondary pdx-wiz-prev" data-to="1">পেছনে</button>
+                <button class="pdx-wiz-btn-primary pdx-wiz-next" data-to="3">পরবর্তী</button>
+            </div>
+            <div class="pdx-wiz-error" id="pdx-wiz-error-2">অনুগ্রহ করে একটি সময় নির্বাচন করুন</div>
+        </div>
+
+        <!-- Step 3: Confirmation -->
+        <div class="pdx-wizard-step" data-step="3" style="display:none">
+            <h3>আপনার কাজের সময়<br>নিশ্চিত করুন</h3>
+            <div class="pdx-wiz-confirm-box">
+                <div style="font-size:14px;font-weight:700;color:#64748b;">আপনি প্রতিদিন কাজ করবেন</div>
+                <div class="pdx-wiz-time-range" id="wiz-confirm-range">—</div>
+                <div class="pdx-wiz-dur" id="wiz-confirm-dur">—</div>
+            </div>
+            <div class="pdx-wiz-nav">
+                <button class="pdx-wiz-btn-secondary pdx-wiz-prev" data-to="2">পেছনে</button>
+                <button class="pdx-wiz-btn-primary" id="wiz-confirm-btn">✅ হ্যাঁ, এই সময়ে কাজ করব</button>
+            </div>
+            <div class="pdx-wiz-error" id="pdx-wiz-error-3"></div>
+        </div>
+    </div>
+</div>
+
+<div id="pdx-pending-notice" class="hidden"></div>
+
+<div id="pdx-wrap">
+    <div class="pdx-container">
+        <div class="pdx-notice" id="pdx-work-notice">
+            ⏰ কাজের সময়: বিকাল ৪টা – রাত ১২টা
+        </div>
+
+        <div class="pdx-header">
+            <h2>🎯 আমার অগ্রযাত্রা</h2>
+            <p id="pdx-header-sub">আমার বেতন যাত্রার সম্পূর্ণ ও সুন্দর চিত্র</p>
+            <button id="pdx-edit-timing" style="display:none">⚙️ সময় পরিবর্তন</button>
+        </div>
+
+        <div id="pdx-cards"></div>
+
+        <button id="pdx-show-all" onclick="window.__toggleShowAllCards()">📋 বাকি লক্ষ্যমাত্রাগুলো দেখুন</button>
+    </div>
+</div>
+
+<script>
+(function () {
+    const root = document.getElementById('pdx-cards');
+    const showAllBtn = document.getElementById('pdx-show-all');
+    const workNotice = document.getElementById('pdx-work-notice');
+    const headerSub = document.getElementById('pdx-header-sub');
+    const editBtn = document.getElementById('pdx-edit-timing');
+    const pendingNotice = document.getElementById('pdx-pending-notice');
+    const wizardOverlay = document.getElementById('pdx-wizard-overlay');
+
+    window.__toggleShowAllCards = function () {
+        showAll = !showAll;
+        showAllBtn.textContent = showAll ? '🔙 শুধু বর্তমান লক্ষ্যমাত্রা দেখুন' : '📋 বাকি লক্ষ্যমাত্রাগুলো দেখুন';
+        updateCardsVisibility();
+        updateVisibleLayout();
+    };
+    showAllBtn.onclick = window.__toggleShowAllCards;
+
+    const MONTHLY_SALARY = 11000;
+    const TEAM_STEPS = 3;
+    const STORAGE_PREFIX = 'pdx_state_v9';
+
+    const TARGET_NAMES = [
+        '🌱 প্রশিক্ষণার্থী (Trainee)',
+        '🤝 নির্বাহী সহযোগী (Executive Associate)',
+        '🪴 জ্যেষ্ঠ নির্বাহী সহযোগী (Senior Executive Associate)',
+        '🛠️ কার্যনির্বাহী কর্মকর্তা (Executive Officer)',
+        '🎖️ জ্যেষ্ঠ কার্যনির্বাহী কর্মকর্তা (Senior Executive Officer)',
+        '📋 সহকারী ব্যবস্থাপক (Assistant Manager)',
+        '⭐ ব্যবস্থাপক (Manager)',
+        '💼 জ্যেষ্ঠ ব্যবস্থাপক (Senior Manager)',
+        '👑 পরিচালক (Director)',
+        '🏆 প্রধান নির্বাহী কর্মকর্তা (Chief Executive Officer – CEO)'
+    ];
+
+    let data = [];
+    let currentIndex = 0;
+    let showAll = false;
+    let teamCount = 0;
+    let rafId = null;
+    let pollTimer = null;
+    let activePanelIndex = null;
+
+    let WORK_START_HOUR = 16;
+    let WORK_END_HOUR = 24;
+    let WORK_DURATION = 8;
+
+    let state = { lastActiveIndex: null };
+    let isEditing = false;
+    let wizardStep = 1;
+    let selectedDuration = 0;
+    let selectedStartHour = 0;
+
+    let segState = null;
+    let segStorage = null;
+    let segRetryNoticeTimer = null;
+    let firstTargetDone = false;
+
+    const HOUR_LABELS = [
+        '12:00 AM','1:00 AM','2:00 AM','3:00 AM','4:00 AM','5:00 AM',
+        '6:00 AM','7:00 AM','8:00 AM','9:00 AM','10:00 AM','11:00 AM',
+        '12:00 PM','1:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM',
+        '6:00 PM','7:00 PM','8:00 PM','9:00 PM','10:00 PM','11:00 PM'
+    ];
+
+    function getDhakaNow() {
+        const now = new Date();
+        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+        return new Date(utc + 6 * 3600000);
+    }
+
+    function getDayKey(date) {
+        if (!(date instanceof Date)) date = getDhakaNow();
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    function getWorkWindow(date) {
+        if (!date) date = getDhakaNow();
+        const start = new Date(date.getTime());
+        start.setHours(WORK_START_HOUR, 0, 0, 0);
+
+        const end = new Date(date.getTime());
+        end.setHours(WORK_END_HOUR, 0, 0, 0);
+
+        if (WORK_END_HOUR <= WORK_START_HOUR) {
+            end.setDate(end.getDate() + 1);
+        }
+
+        return { start, end };
+    }
+
+    function getStorageKey() {
+        return `${STORAGE_PREFIX}_${getDayKey()}`;
+    }
+
+    function safeNumber(value, fallback) {
+        if (fallback === undefined) fallback = 0;
+        const n = Number(value);
+        return Number.isFinite(n) ? n : fallback;
+    }
+
+    function clamp(n, min, max) {
+        return Math.max(min, Math.min(max, n));
+    }
+
+    function saveState() {
+        try { localStorage.setItem(getStorageKey(), JSON.stringify(state)); } catch (e) {}
+    }
+
+    function loadState() {
+        try {
+            const raw = localStorage.getItem(getStorageKey());
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                state = { lastActiveIndex: Number.isFinite(parsed.lastActiveIndex) ? parsed.lastActiveIndex : null };
+            }
+        } catch (e) { state = { lastActiveIndex: null }; }
+    }
+
+    function getSegKey() { return `ag_seg_${getDayKey()}`; }
+
+    function initSegmentFromServer(serverSeg) {
+        if (!serverSeg) return;
+        try {
+            const raw = localStorage.getItem(getSegKey());
+            if (raw) segStorage = JSON.parse(raw);
+        } catch (e) { segStorage = null; }
+
+        if (!segStorage) {
+            segStorage = {
+                current: serverSeg.current,
+                segBaseDuration: serverSeg.seg_duration_sec,
+                carryOver: 0,
+                completed: [...serverSeg.completed],
+                retries: [...serverSeg.retries],
+                savedTime: serverSeg.saved_time,
+                segStartTime: Date.now(),
+                waitingForRetry: false,
+            };
+            localStorage.setItem(getSegKey(), JSON.stringify(segStorage));
+        }
+        segState = serverSeg;
+        firstTargetDone = serverSeg.target0_done;
+        if (firstTargetDone) {
+            try { localStorage.removeItem(getSegKey()); } catch(e) {}
+            segStorage = null;
+        }
+    }
+
+    function syncSegmentFromServer(serverSeg) {
+        if (!serverSeg) return;
+        segState = serverSeg;
+        if (serverSeg.target0_done) {
+            firstTargetDone = true;
+            try { localStorage.removeItem(getSegKey()); } catch(e) {}
+            segStorage = null;
+            return;
+        }
+        if (!segStorage) {
+            initSegmentFromServer(serverSeg);
+            return;
+        }
+        if (serverSeg.current > segStorage.current) {
+            for (let c = segStorage.current; c < serverSeg.current && c < 3; c++) {
+                segStorage.completed[c] = true;
+            }
+            segStorage.current = serverSeg.current;
+            segStorage.savedTime = serverSeg.saved_time;
+            if (segStorage.current < 3) {
+                segStorage.carryOver = segStorage.savedTime;
+                segStorage.segStartTime = Date.now();
+                segStorage.waitingForRetry = false;
+            }
+            localStorage.setItem(getSegKey(), JSON.stringify(segStorage));
+        }
+        if (serverSeg.retries && serverSeg.retries[serverSeg.current] > (segStorage.retries[serverSeg.current] || 0)) {
+            segStorage.retries = [...serverSeg.retries];
+            localStorage.setItem(getSegKey(), JSON.stringify(segStorage));
+        }
+    }
+
+    function formatTimeLabel(hour) {
+        return HOUR_LABELS[hour] || hour + ':00';
+    }
+
+    function formatCountdown(ms) {
+        const safe = Math.max(0, Math.floor(ms));
+        const totalSec = Math.floor(safe / 1000);
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+        const msDigit = Math.floor((safe % 1000) / 10);
+        return { h, m, s, ms: msDigit };
+    }
+
+    function buildStageClass(index, remainingMs) {
+        const total = WORK_DURATION * 60 * 60 * 1000;
+        const elapsed = clamp(total - remainingMs, 0, total);
+        const stageSize = total / 3;
+        const activeCount = clamp(Math.ceil(elapsed / stageSize), 0, 3);
+        return index < activeCount ? 'on' : '';
+    }
+
+    function createTimerHTML(remainingMs, cardIndex) {
+        const t = formatCountdown(remainingMs);
+        let stageHtml = '';
+        if (cardIndex === 0) {
+            stageHtml = `
+            <div class="pdx-stage-wrap">
+                <div class="pdx-stage-title">এখন আপনার কাজ: এই সময়ের মধ্যে অন্তত ১ জন সদস্য যুক্ত করুন</div>
+                <div class="pdx-stage-strip">
+                    <span class="${buildStageClass(0, remainingMs)}"></span>
+                    <span class="${buildStageClass(1, remainingMs)}"></span>
+                    <span class="${buildStageClass(2, remainingMs)}"></span>
+                </div>
+            </div>`;
+        }
+        return `
+            <div class="pdx-timer-container">
+                <div class="pdx-timer-box">
+                    <div class="pdx-timer-digit">${String(t.h).padStart(2, '0')}</div>
+                    <div class="pdx-timer-label">ঘণ্টা</div>
+                </div>
+                <div class="pdx-timer-box">
+                    <div class="pdx-timer-digit">${String(t.m).padStart(2, '0')}</div>
+                    <div class="pdx-timer-label">মিনিট</div>
+                </div>
+                <div class="pdx-timer-box">
+                    <div class="pdx-timer-digit">${String(t.s).padStart(2, '0')}</div>
+                    <div class="pdx-timer-label">সেকেন্ড</div>
+                </div>
+                <div class="pdx-ms-box">
+                    <div class="pdx-timer-digit">${String(t.ms).padStart(2, '0')}</div>
+                </div>
+            </div>
+            ${stageHtml}
+        `;
+    }
+
+    function getTargetLabel(index) {
+        return TARGET_NAMES[index] || `লক্ষ্যমাত্রা ${index + 1}`;
+    }
+    function getLevelRole(index) {
+        var roles = [
+            'প্রশিক্ষণার্থী',
+            'নির্বাহী সহযোগী',
+            'জ্যেষ্ঠ নির্বাহী সহযোগী',
+            'কার্যনির্বাহী কর্মকর্তা',
+            'জ্যেষ্ঠ কার্যনির্বাহী কর্মকর্তা',
+            'সহকারী ব্যবস্থাপক',
+            'ব্যবস্থাপক',
+            'জ্যেষ্ঠ ব্যবস্থাপক',
+            'পরিচালক',
+            'প্রধান নির্বাহী কর্মকর্তা'
+        ];
+        return roles[index] || '';
+    }
+
+    function escHtml(t) {
+        var d = document.createElement('div');
+        d.appendChild(document.createTextNode(t));
+        return d.innerHTML;
+    }
+
+    function renderMemberListHtml(members, heading) {
+        if (!members || !members.length) return '';
+        members.sort(function (a, b) {
+            var da = a.designation_index !== undefined ? a.designation_index : 0;
+            var db = b.designation_index !== undefined ? b.designation_index : 0;
+            return da - db;
+        });
+        var html = '<div class="pdx-level-heading">' + heading + '</div>';
+        members.forEach(function (m) {
+            var mn = m.name || 'User';
+            var mp = m.phone || '';
+            var mw = mp ? 'https://wa.me/' + mp.replace(/[^0-9]/g, '') : '#';
+            var roleIdx = m.designation_index !== undefined ? m.designation_index : 0;
+            html += '<div class="pdx-level-member"><span class="pdx-level-member-name">👤 ' + escHtml(mn) + '</span>';
+            if (mp) { html += ' <a class="pdx-level-member-phone" href="' + mw + '" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="#25D366" style="vertical-align:middle;margin-right:2px"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg> ' + escHtml(mp) + '</a>'; } else { html += '<span class="pdx-level-member-phone" style="background:#f8fafc;color:#94a3b8;cursor:default">📞 ফোন নম্বর নেই</span>'; }
+            html += '<span class="pdx-level-member-role">' + getLevelRole(roleIdx) + '</span></div>';
+        });
+        return html;
+    }
+
+    var levelMembersCache = {};
+    function fetchLevelMembers(level) {
+        if (levelMembersCache[level]) return Promise.resolve(levelMembersCache[level]);
+        return fetch('/wp-admin/admin-ajax.php?action=get_team_members&level=' + level, { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data && data.members) {
+                    levelMembersCache[level] = data.members;
+                    return data.members;
+                }
+                return [];
+            })
+            .catch(function () { return []; });
+    }
+
+    function getSalaryBreakdown(amount) {
+        const total = safeNumber(amount, 0);
+        if (total <= 0) {
+            return { main: 'ডাটা পাওয়া যায়নি', note: `ভিত্তি: ৳ ${MONTHLY_SALARY.toLocaleString('en-US')}` };
+        }
+        const months = Math.floor(total / MONTHLY_SALARY);
+        const remainder = total % MONTHLY_SALARY;
+        const totalPercent = Math.round((total / MONTHLY_SALARY) * 100);
+        if (total < MONTHLY_SALARY) {
+            return { main: `মাসিক বেতনের ${totalPercent}%`, note: `ভিত্তি: ৳ ${MONTHLY_SALARY.toLocaleString('en-US')}` };
+        }
+        if (remainder === 0) {
+            return { main: `${months} মাসের বেতন সম্পূর্ণ`, note: `ভিত্তি: ৳ ${MONTHLY_SALARY.toLocaleString('en-US')}` };
+        }
+        const bonusPercent = Math.round((remainder / MONTHLY_SALARY) * 100);
+        return { main: `${months} মাসের বেতন + ${bonusPercent}% বোনাস`, note: `মোট হিসেবে ${totalPercent}% অগ্রগতি` };
+    }
+
+    function getTeamCountFromPercent(percent) {
+        const p = clamp(safeNumber(percent, 0), 0, 100);
+        return clamp(Math.round(p / 33.3333333333), 0, TEAM_STEPS);
+    }
+
+    function getActiveIndexFromData(items) {
+        if (!Array.isArray(items) || !items.length) return 0;
+        const idx = items.findIndex(d => clamp(safeNumber(d.percent, 0), 0, 100) < 100);
+        return idx === -1 ? items.length - 1 : idx;
+    }
+
+    function getCountdownState() {
+        const now = getDhakaNow();
+        const { start, end } = getWorkWindow(now);
+
+        if (now < start) return { mode: 'before', remainingMs: 0, waitMs: start.getTime() - now.getTime() };
+        if (now >= end) return { mode: 'after', remainingMs: 0, waitMs: 0 };
+        return { mode: 'live', remainingMs: end.getTime() - now.getTime(), waitMs: 0 };
+    }
+
+    function updateTeamStatus() {
+        const countEl = document.getElementById('team-count');
+        const statusEl = document.getElementById('team-status');
+        if (!countEl || !statusEl) return;
+        const capped = clamp(teamCount, 0, TEAM_STEPS);
+        countEl.innerText = `${capped} / ${TEAM_STEPS}`;
+        if (capped === 0) statusEl.innerHTML = `শুরুটা দারুণ! এখন <strong>একজন নতুন সদস্য</strong> যুক্ত করার লক্ষ্য`;
+        else if (capped === 1) statusEl.innerHTML = `চমৎকার! এখন <strong>দ্বিতীয় সদস্য</strong> যুক্ত করার লক্ষ্য`;
+        else if (capped === 2) statusEl.innerHTML = `শেষ ধাপের কাছাকাছি! <strong>তৃতীয় সদস্য</strong> যুক্ত করলেই টিম সম্পূর্ণ`;
+        else statusEl.innerHTML = `🎉 অভিনন্দন! আপনার টিম সম্পূর্ণ হয়েছে`;
+    }
+
+    function updateStaticCardFields() {
+        data.forEach((d, i) => {
+            const card = document.getElementById(`pdx-c${i}`);
+            if (!card) return;
+            const incomeEl = card.querySelector('.pdx-income');
+            const subEl = card.querySelector('.pdx-sub');
+            const fillEl = card.querySelector('.pdx-fill');
+            const footEl = card.querySelector('.pdx-foot');
+            const badgeEl = card.querySelector('.pdx-badge');
+            const percent = clamp(safeNumber(d.percent, 0), 0, 100);
+            if (incomeEl) incomeEl.textContent = `৳ ${d.current_income ?? 0}`;
+            if (subEl) subEl.textContent = `মোট লক্ষ্য: ৳ ${d.total_income ?? 0}`;
+            if (fillEl) fillEl.style.width = `${percent}%`;
+            if (footEl) footEl.textContent = `${percent}% সম্পন্ন`;
+            if (badgeEl) badgeEl.textContent = d.status_label ?? 'Active';
+        });
+    }
+
+    function renderSegmentTimerForTarget0() {
+        const area = document.getElementById('seg-info-0');
+        if (!area) return;
+        if (!segStorage || firstTargetDone) return;
+
+        const now = Date.now();
+        const elapsed = (now - segStorage.segStartTime) / 1000;
+        const totalAvail = segStorage.segBaseDuration + segStorage.carryOver;
+        const remaining = Math.max(0, totalAvail - elapsed);
+        const remInt = Math.floor(remaining);
+        const segNum = segStorage.current + 1;
+        const segPercent = clamp((elapsed / totalAvail) * 100, 0, 100);
+        const isDanger = segPercent > 75;
+
+        const totalSec = remInt;
+        const h = Math.floor(totalSec / 3600);
+        const m = Math.floor((totalSec % 3600) / 60);
+        const s = totalSec % 60;
+
+        let taskHtml;
+        if (segStorage.completed[segStorage.current]) {
+            taskHtml = `<div class="pdx-seg-task done">✅ এই পর্বে সদস্য যুক্ত করা সম্পন্ন</div>`;
+        } else if (segStorage.waitingForRetry) {
+            taskHtml = `<div class="pdx-seg-retry-notice">⏰ সময় শেষ! পুনরায় চেষ্টা করুন</div>`;
+        } else {
+            taskHtml = `<div class="pdx-seg-task">🎯 এই সময়ের মধ্যে অন্তত ১ জন সদস্য যুক্ত করুন</div>`;
+        }
+
+        let savedHtml = '';
+        if (segStorage.carryOver > 0) {
+            const savedH = Math.floor(segStorage.carryOver / 3600);
+            const savedM = Math.floor((segStorage.carryOver % 3600) / 60);
+            savedHtml = `<div class="pdx-seg-saved">⏱ পূর্বের সঞ্চিত সময়: +${savedH}ঘ ${savedM}মি</div>`;
+        }
+
+        let retryText = '';
+        if (segStorage.retries[segStorage.current] > 0) {
+            retryText = ` (পুনঃচেষ্টা ${segStorage.retries[segStorage.current]})`;
+        }
+
+        area.innerHTML = `
+            <div class="pdx-seg-wrap">
+                <div class="pdx-seg-header">
+                    <div class="pdx-seg-label">পর্ব ${segNum}/৩${retryText}</div>
+                    <div class="pdx-seg-badge">${segNum === 1 ? '১ম ব্যক্তি' : segNum === 2 ? '২য় ব্যক্তি' : '৩য় ব্যক্তি'}</div>
+                </div>
+                <div class="pdx-seg-timer">${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}</div>
+                <div class="pdx-seg-bar-wrap">
+                    <div class="pdx-seg-bar-fill ${isDanger ? 'danger' : ''}" style="width:${segPercent}%"></div>
+                </div>
+                ${savedHtml}
+                ${taskHtml}
+            </div>
+        `;
+    }
+
+    function renderInteractiveAreaForCard(index) {
+        const area = document.getElementById(`interactive-${index}`);
+        if (!area) return;
+        const isActive = index === currentIndex;
+        const sharedState = getCountdownState();
+        const label = getTargetLabel(index);
+        const startLabel = formatTimeLabel(WORK_START_HOUR);
+        const endLabel = formatTimeLabel(WORK_END_HOUR);
+        const d = data[index];
+        const percent = clamp(safeNumber(d?.percent ?? 0, 0), 0, 100);
+        const currentIncome = safeNumber(d?.current_income ?? 0, 0);
+        const totalIncome = safeNumber(d?.total_income ?? 0, 0);
+
+        if (!isActive) {
+            if (percent >= 100) {
+                area.innerHTML = `<div class="pdx-compact-note">✅ সম্পূর্ণ — ৳ ${currentIncome.toLocaleString('en-US')} অর্জিত (১০০%)</div>`;
+            } else {
+                area.innerHTML = `<div class="pdx-compact-note">📊 ${percent}% অগ্রগতি — টার্গেট: ৳ ${totalIncome.toLocaleString('en-US')}</div>`;
+            }
+            return;
+        }
+
+        if (index === 0 && segState && !firstTargetDone && sharedState.mode === 'live') {
+            area.innerHTML = createTimerHTML(sharedState.remainingMs, index) +
+                '<div class="pdx-seg-wrap" id="seg-info-0"></div>' +
+                '<div class="pdx-audio-wrap"><button class="pdx-audio-btn" id="audio-btn-0" data-expanded="0">আমাকে এখন যে কাজ করতে হবে</button><div class="pdx-audio-panel" id="audio-panel-0"><div class="pdx-task-section" id="task-section-0"><div class="pdx-task-heading">আমার যে কাজ করতে হবে</div><div class="pdx-task-items" id="task-items-0"></div></div></div></div>';
+            renderSegmentTimerForTarget0();
+            return;
+        }
+
+        if (index > 0 && segState && !firstTargetDone && sharedState.mode === 'live') {
+            area.innerHTML = `<div class="pdx-next-note">প্রথম লক্ষ্যমাত্রা সম্পন্ন হলে এই লক্ষ্যমাত্রার বিস্তারিত দেখা যাবে</div>`;
+            return;
+        }
+
+        if (sharedState.mode === 'before') {
+            area.innerHTML = `<div class="pdx-next-note">আজকের কাজের সময় <strong>${startLabel}</strong> থেকে শুরু হবে। তখন এই লক্ষ্যমাত্রার টাইমার দেখানো শুরু হবে।</div>`;
+            return;
+        }
+
+        if (sharedState.mode === 'after') {
+            area.innerHTML = `<div class="pdx-next-note">আজকের কাজের সময় শেষ হয়েছে।<br>আগামীকাল ${startLabel} এর পর আবার টাইমার চালু হবে।<br>আপনি চাইলে এই সময়ের বাইরেও কাজ এগিয়ে রাখতে পারেন 🚀</div>`;
+            return;
+        }
+
+        if (index === 0 && firstTargetDone) {
+            area.innerHTML = `<div class="pdx-seg-all-done"><div class="pdx-seg-done-icon">🎉</div><div class="pdx-seg-done-text">প্রথম লক্ষ্যমাত্রার সব পর্ব সম্পন্ন!</div></div>`;
+            return;
+        }
+
+        area.innerHTML = `
+            ${createTimerHTML(sharedState.remainingMs, index)}
+            <div class="pdx-audio-wrap">
+                <button class="pdx-audio-btn" id="audio-btn-${index}" data-expanded="0">আমাকে এখন যে কাজ করতে হবে</button>
+                <div class="pdx-audio-panel" id="audio-panel-${index}">
+                    <div class="pdx-task-section" id="task-section-${index}"><div class="pdx-task-heading">আমার যে কাজ করতে হবে</div><div class="pdx-task-items" id="task-items-${index}"></div></div>
+                    ${index > 0 ? `<div class="pdx-level-details" id="level-details-${index}"><div class="pdx-level-loading">লেভেলের তথ্য আনা হচ্ছে...</div></div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    function renderInteractiveAreas() {
+        data.forEach((_, i) => renderInteractiveAreaForCard(i));
+        bindAudioEvents();
+        if (activePanelIndex !== null) {
+            const btn = document.getElementById(`audio-btn-${activePanelIndex}`);
+            const panel = document.getElementById(`audio-panel-${activePanelIndex}`);
+            if (btn && panel) {
+                panel.classList.add('expanded');
+                btn.setAttribute('data-expanded', '1');
+                btn.classList.add('playing');
+                if (activePanelIndex > 0) {
+                    var detailsEl = document.getElementById('level-details-' + activePanelIndex);
+                    if (detailsEl) {
+                        var mhtml = '';
+                        if (activePanelIndex >= 2 && levelMembersCache[1]) {
+                            mhtml += renderMemberListHtml(levelMembersCache[1], 'আমার কাজের সহযোগী');
+                            mhtml += '<div style="height:12px"></div>';
+                        }
+                        if (levelMembersCache[activePanelIndex]) {
+                            var heading = activePanelIndex >= 2 ? 'আমার কাজের অতিরিক্ত সহযোগী' : 'আমার কাজের সহযোগী';
+                            mhtml += renderMemberListHtml(levelMembersCache[activePanelIndex], heading);
+                        }
+                        detailsEl.innerHTML = mhtml;
+                        detailsEl.dataset.loaded = '1';
+                    }
+                }
+            }
+        }
+    }
+
+    function updateCardsVisibility() {
+        document.querySelectorAll('.pdx-card').forEach((card, i) => {
+            const shouldShow = showAll || i === currentIndex;
+            card.style.display = shouldShow ? 'block' : 'none';
+            card.classList.toggle('active', !showAll && i === currentIndex);
+        });
+    }
+
+    function updateWorkHeaderAndTimers() {
+        const stateNow = getCountdownState();
+        const startLabel = formatTimeLabel(WORK_START_HOUR);
+        const endLabel = formatTimeLabel(WORK_END_HOUR);
+        if (stateNow.mode === 'before') {
+            workNotice.textContent = `⏰ আপনার কাজের সময়: ${startLabel} – ${endLabel}`;
+            headerSub.textContent = `${startLabel} এর পরে টাইমার সক্রিয় হবে`;
+        } else if (stateNow.mode === 'after') {
+            workNotice.textContent = '⏰ আজকের কাজের সময় শেষ';
+            headerSub.textContent = `আগামীকাল ${startLabel} এর পর আবার শুরু হবে`;
+        } else {
+            workNotice.textContent = `⏰ আপনার কাজের সময়: ${startLabel} – ${endLabel}`;
+            headerSub.textContent = 'আপনার নির্ধারিত সময়ে অগ্রযাত্রা চলমান';
+        }
+
+        /* Update segment timer for target 0 */
+        if (segStorage && !firstTargetDone && stateNow.mode === 'live') {
+            const now = Date.now();
+            const elapsed = (now - segStorage.segStartTime) / 1000;
+            const totalAvail = segStorage.segBaseDuration + segStorage.carryOver;
+            const remaining = totalAvail - elapsed;
+
+            if (remaining <= 0 && !segStorage.waitingForRetry && !segStorage.completed[segStorage.current]) {
+                segStorage.waitingForRetry = true;
+                segStorage.retries[segStorage.current] = (segStorage.retries[segStorage.current] || 0) + 1;
+                localStorage.setItem(getSegKey(), JSON.stringify(segStorage));
+                renderSegmentTimerForTarget0();
+                if (segRetryNoticeTimer) clearTimeout(segRetryNoticeTimer);
+                segRetryNoticeTimer = setTimeout(() => {
+                    if (segStorage && segStorage.waitingForRetry) {
+                        segStorage.waitingForRetry = false;
+                        segStorage.segStartTime = Date.now();
+                        localStorage.setItem(getSegKey(), JSON.stringify(segStorage));
+                        renderSegmentTimerForTarget0();
+                        segRetryNoticeTimer = null;
+                    }
+                }, 5000);
+            }
+
+            if (!segStorage.waitingForRetry) {
+                renderSegmentTimerForTarget0();
+            }
+        }
+
+        data.forEach((_, i) => {
+            const area = document.getElementById(`interactive-${i}`);
+            if (!area) return;
+            if (stateNow.mode !== 'live') return;
+            const timerRoot = area.querySelector('.pdx-timer-container');
+            if (timerRoot) {
+                const t = formatCountdown(stateNow.remainingMs);
+                timerRoot.innerHTML = `
+                    <div class="pdx-timer-box"><div class="pdx-timer-digit">${String(t.h).padStart(2, '0')}</div><div class="pdx-timer-label">ঘণ্টা</div></div>
+                    <div class="pdx-timer-box"><div class="pdx-timer-digit">${String(t.m).padStart(2, '0')}</div><div class="pdx-timer-label">মিনিট</div></div>
+                    <div class="pdx-timer-box"><div class="pdx-timer-digit">${String(t.s).padStart(2, '0')}</div><div class="pdx-timer-label">সেকেন্ড</div></div>
+                    <div class="pdx-ms-box"><div class="pdx-timer-digit">${String(t.ms).padStart(2, '0')}</div></div>
+                `;
+            }
+
+            const stageRoot = area.querySelector('.pdx-stage-strip');
+            if (stageRoot) {
+                const total = WORK_DURATION * 60 * 60 * 1000;
+                const elapsed = clamp(total - stateNow.remainingMs, 0, total);
+                const activeCount = clamp(Math.ceil(elapsed / (total / 3)), 0, 3);
+                stageRoot.querySelectorAll('span').forEach((span, idx) => {
+                    span.classList.toggle('on', idx < activeCount);
+                });
+            }
+        });
+    }
+
+    function bindAudioEvents() {
+        data.forEach((_, i) => {
+            const btn = document.getElementById(`audio-btn-${i}`);
+            const panel = document.getElementById(`audio-panel-${i}`);
+            if (!btn || !panel) return;
+            if (btn.dataset.bound === '1') return;
+            btn.dataset.bound = '1';
+            btn.addEventListener('click', async () => {
+                const expanded = btn.getAttribute('data-expanded') === '1';
+                if (expanded) {
+                    panel.classList.remove('expanded');
+                    btn.setAttribute('data-expanded', '0');
+                    btn.classList.remove('playing');
+                    activePanelIndex = null;
+                    return;
+                }
+                document.querySelectorAll('.pdx-audio-btn[data-expanded="1"]').forEach(b => {
+                    b.setAttribute('data-expanded', '0');
+                    b.classList.remove('playing');
+                    const p = document.getElementById(b.id.replace('audio-btn-', 'audio-panel-'));
+                    if (p) p.classList.remove('expanded');
+                });
+                panel.classList.add('expanded');
+                btn.setAttribute('data-expanded', '1');
+                btn.classList.add('playing');
+                activePanelIndex = i;
+                if (i > 0) {
+                    var detailsEl = document.getElementById('level-details-' + i);
+                    if (detailsEl && !detailsEl.dataset.loaded) {
+                        detailsEl.dataset.loaded = '1';
+                        var mhtml = '';
+                        if (i >= 2) {
+                            var level1members = await fetchLevelMembers(1);
+                            mhtml += renderMemberListHtml(level1members, 'আমার কাজের সহযোগী');
+                            mhtml += '<div style="height:12px"></div>';
+                        }
+                        var members = await fetchLevelMembers(i);
+                        if (members.length) {
+                            var heading = i >= 2 ? 'আমার কাজের অতিরিক্ত সহযোগী' : 'আমার কাজের সহযোগী';
+                            mhtml += renderMemberListHtml(members, heading);
+                            detailsEl.innerHTML = mhtml;
+                        } else {
+                            detailsEl.innerHTML = mhtml + '<div class="pdx-level-empty">এই লেভেলে কোনো সদস্য পাওয়া যায়নি</div>';
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    function syncTeamStateFromProgress() {
+        const firstPercent = data?.[0]?.percent ?? 0;
+        teamCount = getTeamCountFromPercent(firstPercent);
+        const newActiveIndex = getActiveIndexFromData(data);
+        const prevActiveIndex = state.lastActiveIndex;
+        if (state.lastActiveIndex == null) { state.lastActiveIndex = newActiveIndex; saveState(); }
+        if (prevActiveIndex != null && newActiveIndex > prevActiveIndex) { state.lastActiveIndex = newActiveIndex; saveState(); }
+        currentIndex = newActiveIndex;
+        updateTeamStatus();
+    }
+
+    function buildCards() {
+        root.innerHTML = '';
+        data.forEach((d, i) => {
+            const percent = clamp(safeNumber(d.percent, 0), 0, 100);
+            const isActive = i === currentIndex;
+            const salaryAmount = safeNumber(d.current_income ?? d.total_income ?? 0, 0);
+            const salary = getSalaryBreakdown(salaryAmount);
+            const label = getTargetLabel(i);
+            const targetAmt = safeNumber(d.total_income ?? 0, 0);
+            let html = `
+                <div class="pdx-card ${showAll || isActive ? 'show-all' : ''} ${isActive ? 'active' : ''}" id="pdx-c${i}">
+                    <div class="pdx-top"><div class="pdx-title">${label}</div><div class="pdx-badge">${d.status_label ?? 'Active'}</div></div>
+                    <div class="pdx-income">৳ ${d.current_income ?? 0}</div>
+                    <div class="pdx-sub">টার্গেট: ৳ ${targetAmt.toLocaleString('en-US')} | সর্বোচ্চ আয়: ৳ ${targetAmt.toLocaleString('en-US')}</div>
+                    <div class="pdx-bar"><div class="pdx-fill" style="width:${percent}%"></div></div>
+                    <div class="pdx-foot">${percent}% সম্পন্ন</div>
+                    <div class="pdx-interactive" id="interactive-${i}"></div>`;
+            if (i === 0) {
+                html += `<div class="pdx-team-progress" id="team-progress"><div class="label">আপনার টিম বিল্ডিং প্রগ্রেস</div><div class="count" id="team-count">0 / 3</div><div class="status" id="team-status">শুরুটা দারুণ! এখন <strong>একজন নতুন সদস্য</strong> যুক্ত করার লক্ষ্য</div></div><button class="pdx-extend-btn" id="pdx-extend-btn" style="display:none;">আরও সময় নিতে চান?</button>`;
+            }
+            if (i === 9) {
+                html += `<div class="pdx-winner">🏆 চ্যাম্পিয়ন লক্ষ্যমাত্রা অর্জন 🎉<div class="pdx-winner-grid"><div class="pdx-winner-box"><div class="pdx-winner-label">ইন টোটাল অগ্রগতি</div><div class="pdx-winner-value">${percent}%</div></div><div class="pdx-winner-box"><div class="pdx-winner-label">বেতনভিত্তিক অগ্রগতি</div><div class="pdx-winner-value">${salary.main}</div><div class="pdx-winner-note">${salary.note}</div></div><div class="pdx-winner-box"><div class="pdx-winner-label">বিশেষ ভ্রমণ সুযোগ</div><div class="pdx-winner-value">ভারত<br>কাশ্মীর / দার্জিলিং / মেঘালয়া</div></div></div></div>`;
+            }
+            html += `</div>`;
+            root.insertAdjacentHTML('beforeend', html);
+        });
+    }
+
+    function updateVisibleLayout() {
+        updateStaticCardFields();
+        renderInteractiveAreas();
+        updateCardsVisibility();
+        updateTeamStatus();
+        updateWorkHeaderAndTimers();
+    }
+
+    // ====== User Settings Functions ======
+
+    async function fetchUserSettings() {
+        try {
+            const res = await fetch('/wp-admin/admin-ajax.php', {
+                method: 'POST', credentials: 'same-origin',
+                body: new URLSearchParams({ action: 'ag_get_user_work_settings' })
+            });
+            const json = await res.json();
+            if (json && json.success && json.data) return json.data;
+        } catch (e) {}
+        return null;
+    }
+
+    function applyWorkSettings(settings) {
+        if (settings && settings.has_settings) {
+            WORK_START_HOUR = settings.start_hour;
+            WORK_DURATION = settings.duration;
+            WORK_END_HOUR = (WORK_START_HOUR + WORK_DURATION) % 24;
+        } else {
+            WORK_START_HOUR = 16;
+            WORK_END_HOUR = 24;
+            WORK_DURATION = 8;
+        }
+    }
+
+    function showPendingNotice(settings) {
+        if (!pendingNotice) return;
+        if (settings && settings.pending && settings.pending.has_pending) {
+            const startLabel = formatTimeLabel(settings.pending.start_hour);
+            const endLabel = formatTimeLabel(settings.pending.end_hour);
+            const date = settings.pending.effective_date || 'আগামীকাল';
+            const tomorrow = new Date(getDhakaNow().getTime() + 86400000);
+            const displayDate = date === getDayKey() ? 'আজ' : (date === getDayKey(tomorrow) ? 'আগামীকাল' : date);
+            pendingNotice.innerHTML = `⏳ আপনার নতুন সময়সূচী (${startLabel} – ${endLabel}, ${settings.pending.duration} ঘণ্টা) <strong>${displayDate}</strong> থেকে কার্যকর হবে`;
+            pendingNotice.classList.remove('hidden');
+        } else {
+            pendingNotice.classList.add('hidden');
+        }
+    }
+
+    // ====== Wizard Functions ======
+
+    function initWizard() {
+        const select = document.getElementById('wiz-start-hour');
+        if (!select) return;
+        select.innerHTML = '';
+        for (let h = 0; h < 24; h++) {
+            const opt = document.createElement('option');
+            opt.value = h;
+            opt.textContent = HOUR_LABELS[h];
+            select.appendChild(opt);
+        }
+    }
+
+    function showWizard() {
+        if (wizardOverlay) wizardOverlay.classList.remove('hidden');
+    }
+
+    function hideWizard() {
+        if (wizardOverlay) wizardOverlay.classList.add('hidden');
+    }
+
+    function showWizardStep(step) {
+        document.querySelectorAll('.pdx-wizard-step').forEach(el => {
+            el.style.display = parseInt(el.dataset.step) === step ? 'block' : 'none';
+        });
+        wizardStep = step;
+        document.querySelectorAll('.pdx-wiz-error').forEach(el => el.style.display = 'none');
+    }
+
+    function updateWizardConfirm() {
+        const rangeEl = document.getElementById('wiz-confirm-range');
+        const durEl = document.getElementById('wiz-confirm-dur');
+        if (rangeEl) rangeEl.textContent = `${formatTimeLabel(selectedStartHour)} – ${formatTimeLabel((selectedStartHour + selectedDuration) % 24)}`;
+        if (durEl) durEl.textContent = `মোট ${selectedDuration} ঘণ্টা`;
+    }
+
+    async function saveWizardSettings(duration, startHour) {
+        const btn = document.getElementById('wiz-confirm-btn');
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ সংরক্ষণ হচ্ছে...'; }
+        try {
+            const res = await fetch('/wp-admin/admin-ajax.php', {
+                method: 'POST', credentials: 'same-origin',
+                body: new URLSearchParams({
+                    action: 'ag_save_user_work_settings',
+                    duration: duration,
+                    start_hour: startHour
+                })
+            });
+            const json = await res.json();
+            if (json && json.success) {
+                const data = json.data;
+                if (data.applied === 'pending') {
+                    hideWizard();
+                    if (pendingNotice) {
+                        pendingNotice.innerHTML = `⏳ আপনার নতুন সময়সূচী <strong>${data.effective_date}</strong> থেকে কার্যকর হবে`;
+                        pendingNotice.classList.remove('hidden');
+                    }
+                    alert(data.message);
+                } else {
+                    hideWizard();
+                    WORK_START_HOUR = startHour;
+                    WORK_END_HOUR = (startHour + duration) % 24;
+                    WORK_DURATION = duration;
+                    if (isEditing) {
+                        isEditing = false;
+                        editBtn.style.display = 'block';
+                    }
+                    editBtn.style.display = 'block';
+                    if (pendingNotice) pendingNotice.classList.add('hidden');
+                    await refreshDashboard();
+                }
+            } else {
+                const errEl = document.getElementById('pdx-wiz-error-3');
+                if (errEl) { errEl.textContent = json.data || 'সময় সংরক্ষণে সমস্যা হয়েছে'; errEl.style.display = 'block'; }
+            }
+        } catch (e) {
+            const errEl = document.getElementById('pdx-wiz-error-3');
+            if (errEl) { errEl.textContent = 'সংরক্ষণ ব্যর্থ হয়েছে, আবার চেষ্টা করুন'; errEl.style.display = 'block'; }
+        }
+        if (btn) { btn.disabled = false; btn.textContent = '✅ হ্যাঁ, এই সময়ে কাজ করব'; }
+    }
+
+    function openWizardForEdit() {
+        isEditing = true;
+        selectedDuration = WORK_DURATION;
+        selectedStartHour = WORK_START_HOUR;
+        document.querySelector('input[name="wiz_duration"][value="' + WORK_DURATION + '"]').checked = true;
+        document.getElementById('wiz-start-hour').value = WORK_START_HOUR;
+        updateWizardConfirm();
+        showWizardStep(1);
+        showWizard();
+    }
+
+    function bindWizardEvents() {
+        document.querySelectorAll('.pdx-wiz-next').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const to = parseInt(this.dataset.to);
+                if (wizardStep === 1) {
+                    const selected = document.querySelector('input[name="wiz_duration"]:checked');
+                    if (!selected) {
+                        document.getElementById('pdx-wiz-error-1').style.display = 'block';
+                        return;
+                    }
+                    selectedDuration = parseInt(selected.value);
+                    document.getElementById('pdx-wiz-error-1').style.display = 'none';
+                    updateWizardConfirm();
+                } else if (wizardStep === 2) {
+                    const sel = document.getElementById('wiz-start-hour');
+                    if (!sel) return;
+                    selectedStartHour = parseInt(sel.value);
+                    document.getElementById('pdx-wiz-error-2').style.display = 'none';
+                    updateWizardConfirm();
+                }
+                showWizardStep(to);
+            });
+        });
+
+        document.querySelectorAll('.pdx-wiz-prev').forEach(btn => {
+            btn.addEventListener('click', function () {
+                showWizardStep(parseInt(this.dataset.to));
+            });
+        });
+
+        document.getElementById('wiz-confirm-btn').addEventListener('click', function () {
+            if (selectedDuration > 0) {
+                saveWizardSettings(selectedDuration, selectedStartHour);
+            }
+        });
+
+        if (editBtn) {
+            editBtn.addEventListener('click', openWizardForEdit);
+        }
+    }
+
+    // ====== Dashboard Functions ======
+
+    async function fetchAndRefresh() {
+        try {
+            const res = await fetch('/wp-admin/admin-ajax.php', {
+                method: 'POST', credentials: 'same-origin',
+                body: new URLSearchParams({ action: 'cc_final_progress' })
+            });
+            const json = await res.json();
+            if (!json || !json.success || !json.data || !json.data.data) {
+                root.innerHTML = `<div class="pdx-card active" style="display:block;"><div class="pdx-title">ডাটা লোড হয়নি</div><div class="pdx-sub">AJAX response ঠিক আসছে কিনা চেক করুন।</div></div>`;
+                return false;
+            }
+            const newData = Array.isArray(json.data.data) ? json.data.data : [];
+            data = newData;
+            if (json.data.segment_state) {
+                syncSegmentFromServer(json.data.segment_state);
+            }
+            if (!data.length) {
+                root.innerHTML = `<div class="pdx-card active" style="display:block;"><div class="pdx-title">কোনো লক্ষ্যমাত্রা পাওয়া যায়নি</div><div class="pdx-sub">ডাটাতে লক্ষ্য তালিকা খালি।</div></div>`;
+                return false;
+            }
+            syncTeamStateFromProgress();
+            if (data[0]?.percent >= 100 && !firstTargetDone) {
+                firstTargetDone = true;
+            }
+            return true;
+        } catch (e) {
+            root.innerHTML = `<div class="pdx-card active" style="display:block;"><div class="pdx-title">কানেকশন এরর</div><div class="pdx-sub">নেটওয়ার্ক সমস্যা।</div></div>`;
+            return false;
+        }
+    }
+
+    async function refreshDashboard() {
+        const ok = await fetchAndRefresh();
+        if (!ok) return;
+        buildCards();
+        updateVisibleLayout();
+        bindAudioEvents();
+        startLiveLoops();
+    }
+
+    function startLiveLoops() {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(updateTimerLoop);
+
+        if (pollTimer) clearInterval(pollTimer);
+        pollTimer = setInterval(async () => {
+            const previousActive = currentIndex;
+            try {
+                const refreshed = await fetchAndRefresh();
+                if (!refreshed) return;
+                if (currentIndex !== previousActive && currentIndex > previousActive) {
+                    state.lastActiveIndex = currentIndex;
+                    saveState();
+                }
+                updateVisibleLayout();
+                bindAudioEvents();
+            } catch (e) {}
+        }, 10000);
+    }
+
+    function updateTimerLoop() {
+        updateWorkHeaderAndTimers();
+        updateCardsVisibility();
+        rafId = requestAnimationFrame(updateTimerLoop);
+    }
+
+    // ====== Main ======
+
+    (async function () {
+        loadState();
+        initWizard();
+        bindWizardEvents();
+
+        // 1. Fetch user work settings
+        const settings = await fetchUserSettings();
+        if (settings && settings.has_settings) {
+            applyWorkSettings(settings);
+            showPendingNotice(settings);
+            editBtn.style.display = 'block';
+            hideWizard();
+        } else {
+            // No settings — show wizard
+            editBtn.style.display = 'none';
+            showWizardStep(1);
+            showWizard();
+            return;
+        }
+
+        // 2. Fetch dashboard data
+        const ok = await fetchAndRefresh();
+        if (!ok) return;
+
+        buildCards();
+        updateVisibleLayout();
+        bindAudioEvents();
+        startLiveLoops();
+    })();
+})();
+</script>
+</body>
+</html>
