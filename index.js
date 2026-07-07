@@ -7,7 +7,15 @@ const axios = require('axios');
 const QRCode = require('qrcode');
 
 const WP_API = process.env.WP_API_URL || 'https://jobayergroup.com/wp-json/ai-router/v1/webhook';
-const POLL_INTERVAL = 3000;
+const MAX_RECONNECT_DELAY = 300000;
+let reconnectAttempts = 0;
+
+function getDelay() {
+  reconnectAttempts++;
+  const d = Math.min(1000 * Math.pow(2, reconnectAttempts), MAX_RECONNECT_DELAY);
+  console.log(`Reconnecting in ${Math.round(d / 1000)}s (attempt ${reconnectAttempts})...`);
+  return d;
+}
 
 async function startBot() {
   console.log('Starting WhatsApp AI Bridge...');
@@ -17,14 +25,19 @@ async function startBot() {
   const sock = makeWASocket({
     auth: state,
     printQRInTerminal: false,
-    defaultQueryTimeoutMs: 30000,
-    logger: require('pino')({ level: 'warn' })
+    defaultQueryTimeoutMs: 60000,
+    logger: require('pino')({ level: 'warn' }),
+    connectTimeoutMs: 60000,
+    keepAliveIntervalMs: 25000,
+    markOnlineOnConnect: false,
+    emitOwnEvents: true,
   });
 
   sock.ev.on('creds.update', saveCreds);
 
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
     if (qr) {
+      reconnectAttempts = 0;
       console.log('\n=== SCAN THIS QR CODE WITH WHATSAPP ===');
       try {
         const qrTerminal = await QRCode.toString(qr, { type: 'terminal', small: true });
@@ -39,41 +52,32 @@ async function startBot() {
     }
 
     if (connection === 'open') {
+      reconnectAttempts = 0;
       console.log('WhatsApp connected successfully!');
     }
 
     if (connection === 'close') {
       const reason = lastDisconnect?.error?.output?.statusCode;
       const shouldReconnect = reason !== DisconnectReason.loggedOut;
-
       console.log(`Disconnected (reason: ${reason}). Reconnecting: ${shouldReconnect}`);
-
       if (shouldReconnect) {
-        setTimeout(startBot, 3000);
+        setTimeout(() => startBot(), getDelay());
       } else {
         console.log('Logged out. Delete auth_info folder and restart to re-pair.');
+        process.exit(1);
       }
     }
   });
 
-  sock.ev.on('messages.upsert', async ({ messages, type }) => {
+  sock.ev.on('messages.upsert', async ({ messages }) => {
     for (const msg of messages) {
       if (msg.key.fromMe) continue;
       if (!msg.message || msg.message.protocolMessage) continue;
-
-      const text =
-        msg.message.conversation ||
-        msg.message.extendedTextMessage?.text ||
-        msg.message.imageMessage?.caption ||
-        '';
-
+      const text = msg.message.conversation || msg.message.extendedTextMessage?.text || msg.message.imageMessage?.caption || '';
       if (!text.trim()) continue;
-
       const from = msg.key.remoteJid;
       const sender = msg.pushName || from.split('@')[0];
-
       console.log(`[IN] ${sender} (${from}): ${text.slice(0, 80)}`);
-
       try {
         const res = await axios.post(WP_API, {
           message: text,
@@ -81,14 +85,12 @@ async function startBot() {
           conversation_id: from,
           sender: sender
         }, { timeout: 30000 });
-
         const reply = res.data?.reply || 'Sorry, I could not process that.';
         await sock.sendMessage(from, { text: reply });
         console.log(`[OUT] ${from}: ${reply.slice(0, 80)}`);
       } catch (err) {
         const errMsg = err.response?.data?.message || err.message || 'Unknown error';
         console.error(`[ERR] ${from}: ${errMsg}`);
-
         try {
           await sock.sendMessage(from, {
             text: 'Sorry, I am having trouble connecting to my brain. Please try again in a moment.'
@@ -100,7 +102,6 @@ async function startBot() {
     }
   });
 
-  // Keep-alive
   setInterval(() => {
     if (sock?.ws?.readyState === 1) {
       console.log('Heartbeat OK, connected:', !!sock.user);
