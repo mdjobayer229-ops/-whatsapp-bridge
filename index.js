@@ -125,14 +125,15 @@ async function startBot() {
 
     if (connection === 'close') {
       const reason = lastDisconnect?.error?.output?.statusCode;
-      const shouldReconnect = reason !== DisconnectReason.loggedOut;
-      console.log(`Disconnected (reason: ${reason}). Reconnecting: ${shouldReconnect}`);
-      if (shouldReconnect) {
-        setTimeout(() => startBot(), getDelay());
-      } else {
-        console.log('Logged out. Delete auth_info folder and restart to re-pair.');
-        process.exit(1);
+      if (reason === DisconnectReason.loggedOut) {
+        console.log('Logged out. Clearing auth_info and generating fresh QR...');
+        try { require('fs').rmSync('auth_info', { recursive: true, force: true }); } catch (_) {}
+        pairingRequested = false;
+        qrBuffer = null;
+        return setTimeout(() => startBot(), 1000);
       }
+      console.log(`Disconnected (reason: ${reason}). Reconnecting...`);
+      setTimeout(() => startBot(), getDelay());
     }
   });
 
