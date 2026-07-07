@@ -3,8 +3,7 @@ const http = require('http');
 const {
   default: makeWASocket,
   useMultiFileAuthState,
-  DisconnectReason,
-  fetchLatestWaWebVersion
+  DisconnectReason
 } = require('@whiskeysockets/baileys');
 const axios = require('axios');
 const QRCode = require('qrcode');
@@ -71,15 +70,8 @@ async function startBot() {
   console.log('Starting WhatsApp AI Bridge...');
 
   const { state, saveCreds } = await useMultiFileAuthState('auth_info');
-  let version;
-  try {
-    const v = await fetchLatestWaWebVersion();
-    version = v.version;
-    console.log(`Using WhatsApp Web version: ${version.join('.')}`);
-  } catch (e) {
-    version = [2, 3000, 1033893291];
-    console.log(`Version fetch failed, using fallback: ${version.join('.')}`);
-  }
+  const version = [2, 3000, 1033893291];
+  console.log(`Using WhatsApp Web version: ${version.join('.')}`);
 
   const sock = makeWASocket({
     version: version,
