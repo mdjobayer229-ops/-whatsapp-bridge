@@ -10,6 +10,7 @@ const QRCode = require('qrcode');
 
 const WP_API = process.env.WP_API_URL || 'https://jobayergroup.com/wp-json/ai-router/v1/webhook';
 const PHONE = process.env.WHATSAPP_PHONE || '880130585531';
+const AUTH_DIR = process.env.AUTH_DIR || 'auth_info';
 const MAX_RECONNECT_DELAY = 300000;
 let reconnectAttempts = 0;
 let pairingRequested = false;
@@ -69,7 +70,7 @@ ${!bridgeConnected ? '<div class="instructions"><strong>How to connect:</strong>
 async function startBot() {
   console.log('Starting WhatsApp AI Bridge...');
 
-  const { state, saveCreds } = await useMultiFileAuthState('auth_info');
+  const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
   const version = [2, 3000, 1033893291];
   console.log(`Using WhatsApp Web version: ${version.join('.')}`);
 
@@ -119,7 +120,7 @@ async function startBot() {
       const reason = lastDisconnect?.error?.output?.statusCode;
       if (reason === DisconnectReason.loggedOut) {
         console.log('Logged out. Clearing auth_info and generating fresh QR...');
-        try { require('fs').rmSync('auth_info', { recursive: true, force: true }); } catch (_) {}
+        try { require('fs').rmSync(AUTH_DIR, { recursive: true, force: true }); } catch (_) {}
         pairingRequested = false;
         qrBuffer = null;
         return setTimeout(() => startBot(), 1000);
