@@ -9,8 +9,10 @@ const axios = require('axios');
 const QRCode = require('qrcode');
 
 const WP_API = process.env.WP_API_URL || 'https://jobayergroup.com/wp-json/ai-router/v1/webhook';
+const PHONE = process.env.WHATSAPP_PHONE || '880130585531';
 const MAX_RECONNECT_DELAY = 300000;
 let reconnectAttempts = 0;
+let pairingRequested = false;
 
 function getDelay() {
   reconnectAttempts++;
@@ -51,15 +53,24 @@ async function startBot() {
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
     if (qr) {
       reconnectAttempts = 0;
-      console.log('\n=== SCAN THIS QR CODE WITH WHATSAPP ===');
-      try {
-        const qrTerminal = await QRCode.toString(qr, { type: 'terminal', small: true });
-        console.log(qrTerminal);
-        const qrDataUrl = await QRCode.toDataURL(qr, { width: 400, margin: 2 });
-        console.log('🔗 Open this link in browser to see QR (scan with WhatsApp):');
-        console.log(qrDataUrl);
-      } catch (e) {
-        console.log('QR data:', qr);
+      console.log('\n=== PAIR YOUR WHATSAPP ===');
+      if (!pairingRequested) {
+        pairingRequested = true;
+        try {
+          const code = await sock.requestPairingCode(PHONE);
+          console.log(`\n📱 Pairing Code: ${code}`);
+          console.log('Open WhatsApp → Linked Devices → Link with Phone Number');
+          console.log(`Enter this code when prompted.\n`);
+        } catch (e) {
+          console.log('Pairing failed, showing QR data URL...');
+          pairingRequested = false;
+          try {
+            const qrDataUrl = await QRCode.toDataURL(qr, { width: 400, margin: 2 });
+            console.log(qrDataUrl);
+          } catch (_) {
+            console.log('QR:', qr);
+          }
+        }
       }
       console.log('========================================\n');
     }
