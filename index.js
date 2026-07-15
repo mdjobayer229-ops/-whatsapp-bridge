@@ -313,7 +313,7 @@ ${HTML_FOOT}`);
           const id = data.id || `acc_${Object.keys(accountManager.getAllAccounts()).length + 1}`;
           const phone = data.phone || process.env.WHATSAPP_PHONE || '880130585531';
           try {
-            await accountManager.createAccount({ id, phone, wpApiUrl: WEBHOOK_URL });
+            await accountManager.createAccount({ id, phone, wpApiUrl: WEBHOOK_URL, logInfo, logError });
             jsonResponse(res, { ok: true, id });
           } catch (err) {
             jsonResponse(res, { error: err.message }, 500);
@@ -419,7 +419,7 @@ async function startBot() {
     const id = `acc_${i}`;
     const accPhone = process.env[`WHATSAPP_PHONE_${i}`] || phone;
     logInfo(`Creating account ${id} (${accPhone})...`);
-    accountManager.createAccount({ id, phone: accPhone, wpApiUrl: WEBHOOK_URL }).catch(err => {
+    accountManager.createAccount({ id, phone: accPhone, wpApiUrl: WEBHOOK_URL, logInfo, logError }).catch(err => {
       logError(`Failed to create ${id}: ${err.message}`);
     });
     await new Promise(r => setTimeout(r, 2000));

@@ -21,7 +21,7 @@ function setIncomingHandler(handler) {
 }
 
 async function createAccount(config) {
-  const { id, phone, wpApiUrl } = config;
+  const { id, phone, wpApiUrl, logInfo, logError } = config;
   const authDir = path.join(__dirname, `auth_info_${id}`);
 
   if (accounts[id]) {
@@ -29,6 +29,9 @@ async function createAccount(config) {
   }
 
   warmup.registerAccount(id, phone);
+
+  const log = logInfo || ((msg) => console.log(`[${id}] ${msg}`));
+  const logErr = logError || ((msg) => console.error(`[${id}] ${msg}`));
 
   const { state, saveCreds } = await useMultiFileAuthState(authDir);
   const sock = makeWASocket({
@@ -51,34 +54,34 @@ async function createAccount(config) {
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
     if (qr) {
       reconnectAttempts = 0;
-      console.log(`[${id}] QR code received, generating buffer...`);
+      log(`QR code received, generating buffer...`);
       try {
         accountObj.qrBuffer = await QRCode.toBuffer(qr, { width: 400, margin: 2, type: 'png' });
-        console.log(`[${id}] QR buffer generated (${accountObj.qrBuffer.length} bytes)`);
-        console.log(`[${id}] Scan QR at /qr/${id} or visit /dashboard`);
+        log(`QR buffer generated (${accountObj.qrBuffer.length} bytes)`);
+        log(`Scan QR at /qr/${id} or visit /dashboard`);
       } catch (e) {
-        console.log(`[${id}] QR buffer generation failed: ${e.message}`);
+        log(`QR buffer generation failed: ${e.message}`);
       }
     }
 
     if (connection === 'open') {
       reconnectAttempts = 0;
       accountObj.connected = true;
-      console.log(`[${id}] Connection opened ✓`);
+      log(`Connection opened ✓`);
     }
 
     if (connection === 'close') {
       accountObj.connected = false;
       const reason = lastDisconnect?.error?.output?.statusCode;
       const reasonText = lastDisconnect?.error?.message || 'unknown';
-      console.log(`[${id}] Connection closed — reason code: ${reason}, message: ${reasonText}`);
+      log(`Connection closed — reason code: ${reason}, message: ${reasonText}`);
       if (reason === DisconnectReason.loggedOut) {
-        console.log(`[${id}] Logged out, removing auth dir...`);
+        log(`Logged out, removing auth dir...`);
         try { fs.rmSync(authDir, { recursive: true, force: true }); } catch (_) {}
       }
       reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 300000);
-      console.log(`[${id}] Reconnecting in ${delay}ms (attempt ${reconnectAttempts})...`);
+      log(`Reconnecting in ${delay}ms (attempt ${reconnectAttempts})...`);
         setTimeout(() => {
           const oldIdx = accountList.findIndex(a => a.id === id);
           if (oldIdx >= 0) accountList.splice(oldIdx, 1);
