@@ -308,7 +308,7 @@ ${HTML_FOOT}`);
           const id = data.id || `acc_${Object.keys(accountManager.getAllAccounts()).length + 1}`;
           const phone = data.phone || process.env.WHATSAPP_PHONE || '880130585531';
           try {
-            await accountManager.createAccount({ id, phone, wpApiUrl: WP_API });
+            await accountManager.createAccount({ id, phone, wpApiUrl: WEBHOOK_URL });
             jsonResponse(res, { ok: true, id });
           } catch (err) {
             jsonResponse(res, { error: err.message }, 500);
@@ -359,15 +359,16 @@ ${HTML_FOOT}`);
     }
   }).listen(port, () => {
     logInfo(`Server: http://localhost:${port}`);
-    logInfo(`WP_API: ${WP_API}`);
+    logInfo(`Webhook URL: ${WEBHOOK_URL}`);
   });
 }
 
 async function pollServerQueue() {
   const accounts = accountManager.getConnectedAccounts();
   if (accounts.length === 0) return;
+  const appBase = APP_URL || WEBHOOK_URL.replace('/api/whatsapp/webhook', '');
   try {
-    const res = await axios.get(`${WEBHOOK_URL.replace('/api/whatsapp/webhook', '')}/api/whatsapp/queue?account_id=web_main`, { timeout: 10000 });
+    const res = await axios.get(`${appBase}/api/whatsapp/queue?account_id=web_main`, { timeout: 10000 });
     const pending = res.data?.pending || [];
     for (const msg of pending) {
       const phone = msg.to || msg.to_phone;
@@ -377,7 +378,7 @@ async function pollServerQueue() {
       if (!acc?.sock) continue;
       const jid = phone.includes('@s.whatsapp.net') ? phone : `${phone}@s.whatsapp.net`;
       await acc.sock.sendMessage(jid, { text });
-      await axios.post(`${WEBHOOK_URL.replace('/api/whatsapp/webhook', '')}/api/whatsapp/queue`, {
+      await axios.post(`${appBase}/api/whatsapp/queue`, {
         action: 'mark_sent', id: msg.id
       }, { timeout: 5000 });
       logInfo(`[QUEUE] Sent to ${phone}: ${text.slice(0, 60)}`);
@@ -402,7 +403,7 @@ async function startBot() {
     const id = `acc_${i}`;
     const accPhone = process.env[`WHATSAPP_PHONE_${i}`] || phone;
     logInfo(`Creating account ${id} (${accPhone})...`);
-    accountManager.createAccount({ id, phone: accPhone, wpApiUrl: WP_API }).catch(err => {
+    accountManager.createAccount({ id, phone: accPhone, wpApiUrl: WEBHOOK_URL }).catch(err => {
       logError(`Failed to create ${id}: ${err.message}`);
     });
     await new Promise(r => setTimeout(r, 2000));
