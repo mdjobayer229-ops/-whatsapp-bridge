@@ -1,24 +1,17 @@
 if (!globalThis.crypto) globalThis.crypto = require('crypto').webcrypto;
 const http = require('http');
 const fs = require('fs');
-const {
-  default: makeWASocket,
-  useMultiFileAuthState,
-  DisconnectReason
-} = require('@whiskeysockets/baileys');
+const path = require('path');
 const axios = require('axios');
-const QRCode = require('qrcode');
+const accountManager = require('./account-manager');
+const scanner = require('./scanner');
+const validator = require('./validator');
+const blocklist = require('./blocklist');
+const contacts = require('./contacts');
+const messenger = require('./messenger');
+const warmup = require('./warmup');
 
-const WP_API = process.env.WP_API_URL || 'https://jobayergroup.com/wp-json/ai-router/v1/webhook';
-const PHONE = process.env.WHATSAPP_PHONE || '880130585531';
-const AUTH_DIR = process.env.AUTH_DIR || 'auth_info';
-const MAX_RECONNECT_DELAY = 300000;
-const LOG_MAX = 200;
-
-let reconnectAttempts = 0;
-let pairingRequested = false;
-let qrBuffer = null;
-let bridgeConnected = false;
+const LOG_MAX = 500;
 const logs = [];
 
 function log(level, msg) {
@@ -27,239 +20,421 @@ function log(level, msg) {
   logs.unshift(line);
   if (logs.length > LOG_MAX) logs.length = LOG_MAX;
 }
-
 function logInfo(msg) { log('INFO', msg); }
 function logWarn(msg) { log('WARN', msg); }
 function logError(msg) { log('ERR', msg); }
 
-function getDelay() {
-  reconnectAttempts++;
-  const d = Math.min(1000 * Math.pow(2, reconnectAttempts), MAX_RECONNECT_DELAY);
-  logInfo(`Reconnecting in ${Math.round(d / 1000)}s (attempt ${reconnectAttempts})...`);
-  return d;
+const APP_URL = process.env.APP_URL || 'https://jobayer-group-career.workers.dev';
+const WEBHOOK_URL = (process.env.WP_API_URL || `${APP_URL}/api/whatsapp/webhook`).replace(/\/+$/, '');
+
+async function handleIncomingMessage(sock, accountId, msg, config) {
+  try {
+    if (!msg || !msg.key) return;
+    if (msg.key.fromMe) return;
+    if (!msg.message || msg.message.protocolMessage) return;
+    const text = msg.message.conversation || msg.message.extendedTextMessage?.text || msg.message.imageMessage?.caption || '';
+    if (!text || !text.trim()) return;
+    const from = msg.key.remoteJid;
+    const sender = msg.pushName || (from ? from.split('@')[0] : 'unknown');
+    if (!from) return;
+
+    const phone = from.split('@')[0];
+    if (blocklist.isBlocked(phone)) {
+      logInfo(`[BLOCKED] ${sender} (${from}) — skipped`);
+      return;
+    }
+
+    contacts.addOrUpdate(phone, { status: 'replied', name_guess: sender });
+
+    logInfo(`[IN][${accountId}] ${sender} (${from}): ${text.slice(0, 80)}`);
+
+    const res = await axios.post(config.wpApiUrl || WEBHOOK_URL, {
+      phone,
+      text,
+      name: sender || '',
+      fromBrowser: true
+    }, { timeout: 65000 });
+
+    const reply = res.data?.reply || res.data?.message || 'Sorry, I could not process that.';
+
+    const typingMs = Math.min(4000, Math.max(1500, reply.length * 50));
+    const delay = Math.round(typingMs * (0.7 + Math.random() * 0.6));
+    await sock.sendPresenceUpdate('composing', from);
+    await new Promise(r => setTimeout(r, delay));
+    await sock.sendMessage(from, { text: reply });
+    logInfo(`[OUT][${accountId}] ${from}: ${reply.slice(0, 80)}`);
+  } catch (err) {
+    const from = msg?.key?.remoteJid || 'unknown';
+    const errMsg = err.response?.data?.message || err.message || 'Unknown error';
+    const statusCode = err.response?.status || '';
+    logError(`[${accountId}] ${statusCode ? 'HTTP ' + statusCode + ' ' : ''}${from}: ${errMsg}`);
+  }
 }
 
-function startServer() {
+async function processOutboundQueue() {
+  const accounts = accountManager.getAllAccounts();
+  for (const acc of accounts) {
+    if (!acc.connected) continue;
+    const status = warmup.getStatus(acc.id);
+    if (!status || status.remaining <= 0) continue;
+    const sock = accountManager.getAccount(acc.id)?.sock;
+    if (!sock) continue;
+    await messenger.processQueue(sock, acc.id, status.limit, status.sent_today, async (result) => {
+      if (result.status === 'sent') {
+        warmup.incrementSent(acc.id);
+        contacts.markContacted(result.to.split('@')[0]);
+        logInfo(`[SENT][${acc.id}] ${result.to}: ${result.text.slice(0, 60)}`);
+      }
+    });
+  }
+}
+
+function bodyParser(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', c => { body += c; });
+    req.on('end', () => {
+      try { resolve(body ? JSON.parse(body) : {}); }
+      catch (e) { reject(new Error('Invalid JSON')); }
+    });
+    req.on('error', reject);
+  });
+}
+
+function jsonResponse(res, data, status = 200) {
+  res.writeHead(status, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+  res.end(JSON.stringify(data));
+}
+
+const HTML_HEAD = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WhatsApp AI Bridge</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#0f0f1a;color:#e0e0e0;padding:20px}
+.container{max-width:960px;margin:0 auto}
+h1{color:#00e676;font-size:24px;margin-bottom:20px}
+h2{color:#69f0ae;font-size:18px;margin:20px 0 10px}
+.card{background:#1a1a2e;border-radius:12px;padding:16px;margin-bottom:12px;border:1px solid #2a2a4a}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:10px 0}
+.stat{padding:12px;background:#16213e;border-radius:8px;text-align:center}
+.stat-value{font-size:28px;font-weight:700;color:#00e676}
+.stat-label{font-size:12px;color:#888;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid #2a2a4a}
+th{color:#69f0ae;font-weight:600}
+.status-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.status-connected{background:#1b5e20;color:#a5d6a7}
+.status-waiting{background:#e65100;color:#ffcc80}
+.status-error{background:#b71c1c;color:#ef9a9a}
+a{color:#69f0ae;text-decoration:none;margin-right:12px;font-size:13px}
+a:hover{text-decoration:underline}
+.nav{padding:10px 0;margin-bottom:20px;border-bottom:1px solid #2a2a4a}
+</style></head><body><div class="container">`;
+
+const HTML_FOOT = `</div></body></html>`;
+
+async function startServer() {
   const port = process.env.PORT || 8080;
   http.createServer(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    if (req.url === '/qr' && qrBuffer) {
-      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-cache' });
-      res.end(qrBuffer);
-    } else if (req.url === '/health') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ connected: bridgeConnected, uptime: process.uptime() }));
-    } else if (req.url === '/logs') {
-      res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify(logs.slice(0, 100)));
-    } else if (req.url === '/env') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({
-        WP_API,
-        PHONE,
-        AUTH_DIR,
-        NODE_VERSION: process.version,
-        HAS_AUTH_DIR: fs.existsSync(AUTH_DIR),
-        AUTH_FILES: fs.existsSync(AUTH_DIR) ? fs.readdirSync(AUTH_DIR).length : 0,
-      }));
-    } else if (req.url === '/test' && req.method === 'POST') {
-      let body = '';
-      req.on('data', c => { body += c; });
-      req.on('end', async () => {
-        try {
-          const payload = JSON.parse(body || '{}');
-          const testMsg = payload.message || 'test from bridge';
-          const res2 = await axios.post(WP_API, {
-            message: testMsg,
-            from: 'test@s.whatsapp.net',
-            conversation_id: 'test',
-            sender: 'bridge-test'
-          }, { timeout: 30000 });
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: true, webhookResponse: res2.data, status: res2.status }));
-        } catch (err) {
-          const detail = err.response ? { status: err.response.status, data: err.response.data } : { message: err.message };
-          res.writeHead(502, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ success: false, error: detail }));
-        }
-      });
-    } else if (req.url === '/clear-pairing' && req.method === 'POST') {
-      pairingRequested = false;
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: true }));
-    } else if (req.url === '/reset' && req.method === 'POST') {
-      logInfo('Manual reset requested');
-      try { fs.rmSync(AUTH_DIR, { recursive: true, force: true }); } catch (_) {}
-      pairingRequested = false;
-      qrBuffer = null;
-      bridgeConnected = false;
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ok: true, message: 'Auth cleared. Restarting...' }));
-      setTimeout(() => process.exit(0), 500);
-    } else {
-      const statusClass = bridgeConnected ? 'connected' : 'waiting';
-      const statusText = bridgeConnected ? '✅ Connected' : '⏳ Waiting for QR scan...';
-      const qrSection = bridgeConnected
-        ? '<p>The bridge is active and running 24/7.</p>'
-        : qrBuffer
-          ? '<img src="/qr" alt="QR Code"><p>Scan this QR code with WhatsApp to connect</p><p class="small">QR refreshes automatically if it expires</p>'
-          : '<p>Generating QR code... Please refresh in a few seconds.</p>';
-      const instructions = !bridgeConnected
-        ? '<div class="instructions"><strong>How to connect:</strong><ol><li>Open WhatsApp on your phone</li><li>Tap <strong>⋮ → Linked devices → Link a device</strong></li><li>Scan the QR code above with your phone</li><li>Done! The bridge will be active 24/7</li></ol></div>'
-        : '';
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(`<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>WhatsApp AI Bridge</title>
-<style>body{font-family:sans-serif;text-align:center;padding:40px;background:#f5f5f5;margin:0}
-h1{color:#075e54;font-size:28px}img{max-width:100%;width:400px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.15);margin:20px 0}
-.status{font-size:20px;margin:15px 0;padding:10px 20px;border-radius:8px;display:inline-block}
-.connected{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
-.waiting{background:#fff3e0;color:#e65100;border:1px solid #ffcc80}
-.instructions{background:#fff;border-radius:12px;padding:24px;margin:20px auto;max-width:460px;text-align:left;box-shadow:0 2px 10px rgba(0,0,0,.08)}
-.instructions ol{margin:8px 0 0 20px;line-height:1.8}
-.small{color:#888;font-size:13px;margin-top:30px}
-</style></head><body>
-<h1>WhatsApp AI Bridge</h1>
-<p class="status ${statusClass}">${statusText}</p>
-${qrSection}
-${instructions}
-<div style="margin-top:20px">
-  <a href="/health" style="margin:0 10px">/health</a>
-  <a href="/env" style="margin:0 10px">/env</a>
-  <a href="/logs" style="margin:0 10px">/logs</a>
-  <a href="/test" style="margin:0 10px">POST /test</a>
+    const url = new URL(req.url, `http://localhost:${port}`);
+    const pathname = url.pathname;
+
+    try {
+      if (pathname === '/health' || pathname === '/') {
+        const accounts = accountManager.getAllAccounts();
+        const contactStats = contacts.getStats();
+        const queueStats = messenger.getQueueStats();
+        const scanStats = scanner.getStats();
+
+        jsonResponse(res, {
+          connected: accounts.some(a => a.connected),
+          accounts,
+          contacts: contactStats,
+          queue: queueStats,
+          scanner: scanStats,
+          uptime: process.uptime()
+        });
+      }
+
+      else if (pathname === '/dashboard') {
+        const accounts = accountManager.getAllAccounts();
+        const contactStats = contacts.getStats();
+        const queueStats = messenger.getQueueStats();
+        const scanStats = scanner.getStats();
+        const warmupStats = warmup.getAllStatus();
+
+        let accountRows = accounts.map(a => {
+          const w = warmupStats[a.id] || {};
+          const cls = a.connected ? 'status-connected' : 'status-waiting';
+          return `<tr><td>${a.id}</td><td>${a.phone}</td><td><span class="status-badge ${cls}">${a.connected ? 'Connected' : 'Waiting'}</span></td><td>${w.day_count || '-'}</td><td>${w.limit || '-'}</td><td>${w.sent_today || 0}</td><td>${w.remaining || 0}</td><td>${Math.floor(a.uptime / 1000)}s</td></tr>`;
+        }).join('');
+
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+        res.end(`${HTML_HEAD}
+<div class="nav">
+  <a href="/">Home</a>
+  <a href="/dashboard">Dashboard</a>
+  <a href="/env">Env</a>
+  <a href="/logs">Logs</a>
+  <a href="/contacts">Contacts</a>
+  <a href="/blocklist">Blocklist</a>
 </div>
-<p class="small">WhatsApp AI Bridge &mdash; jobayergroup.com</p>
-</body></html>`);
+<h1>Dashboard</h1>
+<div class="grid">
+  <div class="stat"><div class="stat-value">${contactStats.total}</div><div class="stat-label">Total Contacts</div></div>
+  <div class="stat"><div class="stat-value">${contactStats.converted}</div><div class="stat-label">Converted</div></div>
+  <div class="stat"><div class="stat-value">${contactStats.replied}</div><div class="stat-label">Replied</div></div>
+  <div class="stat"><div class="stat-value">${contactStats.blocked}</div><div class="stat-label">Blocked</div></div>
+  <div class="stat"><div class="stat-value">${contactStats.highPriority}</div><div class="stat-label">High Priority</div></div>
+  <div class="stat"><div class="stat-value">${contactStats.female}</div><div class="stat-label">Female</div></div>
+  <div class="stat"><div class="stat-value">${queueStats.pending}</div><div class="stat-label">Queue Pending</div></div>
+  <div class="stat"><div class="stat-value">${queueStats.sent}</div><div class="stat-label">Sent Today</div></div>
+</div>
+<h2>WhatsApp Accounts</h2>
+<div class="card">
+<table><thead><tr><th>ID</th><th>Phone</th><th>Status</th><th>Day</th><th>Limit</th><th>Sent</th><th>Remaining</th><th>Uptime</th></tr></thead><tbody>${accountRows || '<tr><td colspan="8">No accounts</td></tr>'}</tbody></table>
+</div>
+<h2>Scanner</h2>
+<div class="card">
+<div class="grid">
+  <div class="stat"><div class="stat-value">${scanStats.total}</div><div class="stat-label">Scanned</div></div>
+  <div class="stat"><div class="stat-value">${scanStats.whatsapp}</div><div class="stat-label">WhatsApp</div></div>
+  <div class="stat"><div class="stat-value">${scanStats.noWhatsApp}</div><div class="stat-label">No WhatsApp</div></div>
+  <div class="stat"><div class="stat-value">${scanStats.pending}</div><div class="stat-label">Pending</div></div>
+</div>
+</div>
+${HTML_FOOT}`);
+      }
+
+      else if (pathname === '/env') {
+        jsonResponse(res, {
+          APP_URL,
+          WEBHOOK_URL,
+          NODE_VERSION: process.version,
+          ACCOUNTS: process.env.WHATSAPP_ACCOUNTS || 'not set',
+          DATA_DIR_EXISTS: fs.existsSync(path.join(__dirname, 'data')),
+          cont: {
+            contacts: fs.existsSync(path.join(__dirname, 'data', 'contacts.json')) ? JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'contacts.json'), 'utf8')).length : 0,
+            queue: fs.existsSync(path.join(__dirname, 'data', 'queue.json')) ? JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'queue.json'), 'utf8')).length : 0,
+          }
+        });
+      }
+
+      else if (pathname === '/logs') {
+        const limit = parseInt(url.searchParams.get('limit') || '100');
+        jsonResponse(res, logs.slice(0, limit));
+      }
+
+      else if (pathname === '/contacts') {
+        const status = url.searchParams.get('status') || '';
+        if (status) {
+          jsonResponse(res, { contacts: contacts.getContactsByStatus(status, 200) });
+        } else {
+          jsonResponse(res, { stats: contacts.getStats() });
+        }
+      }
+
+      else if (pathname === '/blocklist') {
+        if (req.method === 'POST') {
+          const data = await bodyParser(req);
+          if (data.action === 'add' && data.phone) {
+            blocklist.addToBlocklist(data.phone, data.reason || 'api');
+            jsonResponse(res, { ok: true });
+          } else if (data.action === 'remove' && data.phone) {
+            blocklist.removeFromBlocklist(data.phone);
+            jsonResponse(res, { ok: true });
+          } else {
+            jsonResponse(res, { error: 'Invalid action' }, 400);
+          }
+        } else {
+          jsonResponse(res, { blocklist: blocklist.getBlocklist() });
+        }
+      }
+
+      else if (pathname === '/numbers/generate') {
+        const count = parseInt(url.searchParams.get('count') || '1000');
+        const phones = scanner.generateBatch(count);
+        jsonResponse(res, { generated: phones.length, phones });
+      }
+
+      else if (pathname === '/numbers/validate') {
+        if (req.method !== 'POST') { jsonResponse(res, { error: 'POST required' }, 405); return; }
+        const data = await bodyParser(req);
+        const phones = data.phones || [];
+        if (phones.length === 0) { jsonResponse(res, { error: 'No phones' }, 400); return; }
+        const acc = accountManager.getLeastLoadedAccount();
+        if (!acc) { jsonResponse(res, { error: 'No connected account' }, 503); return; }
+        const results = await validator.validateBatch(acc.sock, phones);
+        for (const r of results) {
+          scanner.markScanned(r.phone, r.isWhatsApp, r.jid);
+          if (r.isWhatsApp && !blocklist.isBlocked(r.phone)) {
+            contacts.addOrUpdate(r.phone, { status: 'pending', source: 'whatsapp_scan', jid: r.jid });
+          }
+        }
+        const valid = results.filter(r => r.isWhatsApp).length;
+        jsonResponse(res, { total: results.length, valid, invalid: results.length - valid, results });
+      }
+
+      else if (pathname === '/send') {
+        if (req.method !== 'POST') { jsonResponse(res, { error: 'POST required' }, 405); return; }
+        const data = await bodyParser(req);
+        const { to, text, priority } = data;
+        if (!to || !text) { jsonResponse(res, { error: 'to and text required' }, 400); return; }
+        const phone = to.replace(/[^0-9]/g, '');
+        if (blocklist.isBlocked(phone)) { jsonResponse(res, { error: 'Blocked number' }, 403); return; }
+        messenger.enqueue(to, text, priority || 0);
+        jsonResponse(res, { ok: true, queued: true });
+      }
+
+      else if (pathname === '/queue') {
+        jsonResponse(res, { queue: messenger.getQueueStats() });
+      }
+
+      else if (pathname === '/queue/flush') {
+        if (req.method !== 'POST') { jsonResponse(res, { error: 'POST required' }, 405); return; }
+        await processOutboundQueue();
+        jsonResponse(res, { ok: true });
+      }
+
+      else if (pathname === '/warmup') {
+        jsonResponse(res, { accounts: warmup.getAllStatus() });
+      }
+
+      else if (pathname === '/accounts') {
+        if (req.method === 'POST') {
+          const data = await bodyParser(req);
+          const id = data.id || `acc_${Object.keys(accountManager.getAllAccounts()).length + 1}`;
+          const phone = data.phone || process.env.WHATSAPP_PHONE || '880130585531';
+          try {
+            await accountManager.createAccount({ id, phone, wpApiUrl: WP_API });
+            jsonResponse(res, { ok: true, id });
+          } catch (err) {
+            jsonResponse(res, { error: err.message }, 500);
+          }
+        } else {
+          jsonResponse(res, { accounts: accountManager.getAllAccounts() });
+        }
+      }
+
+      else if (pathname === '/accounts/remove') {
+        if (req.method !== 'POST') { jsonResponse(res, { error: 'POST required' }, 405); return; }
+        const data = await bodyParser(req);
+        if (!data.id) { jsonResponse(res, { error: 'id required' }, 400); return; }
+        await accountManager.removeAccount(data.id);
+        jsonResponse(res, { ok: true });
+      }
+
+      else if (pathname === '/stats') {
+        jsonResponse(res, {
+          contacts: contacts.getStats(),
+          queue: messenger.getQueueStats(),
+          scanner: scanner.getStats(),
+          accounts: accountManager.getAllAccounts().map(a => ({
+            id: a.id,
+            phone: a.phone,
+            connected: a.connected,
+            warmup: warmup.getStatus(a.id)
+          }))
+        });
+      }
+
+      else if (pathname === '/campaign/start') {
+        if (req.method !== 'POST') { jsonResponse(res, { error: 'POST required' }, 405); return; }
+        const data = await bodyParser(req);
+        const count = data.count || 10000;
+        const message = data.message || process.env.DEFAULT_OUTREACH_MSG || '';
+
+        const phones = scanner.generateBatch(count);
+        jsonResponse(res, { generated: phones.length, message: 'Generated. Now validate with POST /numbers/validate' });
+      }
+
+      else {
+        jsonResponse(res, { error: 'Not found', paths: ['/health', '/dashboard', '/env', '/logs', '/contacts', '/blocklist', '/numbers/generate', '/numbers/validate', '/send', '/queue', '/queue/flush', '/warmup', '/accounts', '/accounts/remove', '/stats', '/campaign/start'] }, 404);
+      }
+    } catch (err) {
+      logError(`HTTP Error: ${err.message}`);
+      jsonResponse(res, { error: err.message }, 500);
     }
   }).listen(port, () => {
-    logInfo(`Web UI: http://localhost:${port}`);
+    logInfo(`Server: http://localhost:${port}`);
     logInfo(`WP_API: ${WP_API}`);
-    logInfo(`AUTH_DIR: ${AUTH_DIR} (exists: ${fs.existsSync(AUTH_DIR)})`);
-    logInfo(`PHONE: ${PHONE}`);
-    logInfo(`Open Railway Dashboard → Settings → Public Networking → Generate Domain`);
-    logInfo(`Then open that URL in your browser to scan QR.`);
   });
 }
 
+async function pollServerQueue() {
+  const accounts = accountManager.getConnectedAccounts();
+  if (accounts.length === 0) return;
+  try {
+    const res = await axios.get(`${WEBHOOK_URL.replace('/api/whatsapp/webhook', '')}/api/whatsapp/queue?account_id=web_main`, { timeout: 10000 });
+    const pending = res.data?.pending || [];
+    for (const msg of pending) {
+      const phone = msg.to || msg.to_phone;
+      const text = msg.text || msg.text_content;
+      if (!phone || !text) continue;
+      const acc = accounts[0];
+      if (!acc?.sock) continue;
+      const jid = phone.includes('@s.whatsapp.net') ? phone : `${phone}@s.whatsapp.net`;
+      await acc.sock.sendMessage(jid, { text });
+      await axios.post(`${WEBHOOK_URL.replace('/api/whatsapp/webhook', '')}/api/whatsapp/queue`, {
+        action: 'mark_sent', id: msg.id
+      }, { timeout: 5000 });
+      logInfo(`[QUEUE] Sent to ${phone}: ${text.slice(0, 60)}`);
+    }
+  } catch (e) {
+    if (e.code !== 'ECONNREFUSED' && e.code !== 'ENOTFOUND') {
+      logError(`Queue poll error: ${e.message}`);
+    }
+  }
+}
+
 async function startBot() {
-  logInfo('Starting WhatsApp AI Bridge...');
+  logInfo('Starting WhatsApp AI Bridge v2...');
 
-  const { state, saveCreds } = await useMultiFileAuthState(AUTH_DIR);
-  const version = [2, 3000, 1033893291];
-  logInfo(`Using WhatsApp Web version: ${version.join('.')}`);
+  const accountsConfig = process.env.WHATSAPP_ACCOUNTS || '1';
+  const phone = process.env.WHATSAPP_PHONE || '880130585531';
+  const count = parseInt(accountsConfig);
 
-  const sock = makeWASocket({
-    version: version,
-    auth: state,
-    browser: ['Chrome', 'macOS', '10.15.7'],
-    printQRInTerminal: false,
-    defaultQueryTimeoutMs: 60000,
-    logger: require('pino')({ level: 'warn' }),
-    connectTimeoutMs: 60000,
-    keepAliveIntervalMs: 25000,
-    markOnlineOnConnect: false,
-    emitOwnEvents: true,
-    syncFullHistory: true,
-  });
+  accountManager.setIncomingHandler(handleIncomingMessage);
 
-  sock.ev.on('creds.update', saveCreds);
-
-  sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
-    if (qr) {
-      reconnectAttempts = 0;
-      bridgeConnected = false;
-      try {
-        qrBuffer = await QRCode.toBuffer(qr, { width: 400, margin: 2, type: 'png' });
-        logInfo('QR code generated');
-      } catch (_) {
-        logWarn('QR buffer generation failed');
-      }
-      if (!pairingRequested) {
-        pairingRequested = true;
-        try {
-          const code = await sock.requestPairingCode(PHONE);
-          logInfo(`Pairing Code (backup): ${code}`);
-        } catch (_) {}
-      }
-    }
-
-    if (connection === 'open') {
-      reconnectAttempts = 0;
-      bridgeConnected = true;
-      pairingRequested = false;
-      qrBuffer = null;
-      logInfo('WhatsApp connected successfully!');
-    }
-
-    if (connection === 'close') {
-      const reason = lastDisconnect?.error?.output?.statusCode;
-      if (reason === DisconnectReason.loggedOut) {
-        logWarn('Logged out. Clearing auth_info and generating fresh QR...');
-        try { fs.rmSync(AUTH_DIR, { recursive: true, force: true }); } catch (_) {}
-        pairingRequested = false;
-        qrBuffer = null;
-        return setTimeout(() => startBot(), 1000);
-      }
-      logWarn(`Disconnected (reason: ${reason}). Reconnecting...`);
-      setTimeout(() => startBot(), getDelay());
-    }
-  });
-
-  sock.ev.on('messages.upsert', async ({ messages }) => {
-    for (const msg of messages) {
-      try {
-        if (!msg || !msg.key) continue;
-        if (msg.key.fromMe) continue;
-        if (!msg.message || msg.message.protocolMessage) continue;
-        const text = msg.message.conversation || msg.message.extendedTextMessage?.text || msg.message.imageMessage?.caption || '';
-        if (!text || !text.trim()) continue;
-        const from = msg.key.remoteJid;
-        const sender = msg.pushName || (from ? from.split('@')[0] : 'unknown');
-        if (!from) continue;
-        logInfo(`[IN] ${sender} (${from}): ${text.slice(0, 80)}`);
-        const res = await axios.post(WP_API, {
-          message: text,
-          from: from,
-          conversation_id: from,
-          sender: sender
-        }, { timeout: 65000 });
-        const reply = res.data?.reply || res.data?.message || 'Sorry, I could not process that.';
-        const typingMs = Math.min(4000, Math.max(1500, reply.length * 50));
-        const delay = Math.round(typingMs * (0.7 + Math.random() * 0.6));
-        await sock.sendPresenceUpdate('composing', from);
-        await new Promise(r => setTimeout(r, delay));
-        await sock.sendMessage(from, { text: reply });
-        logInfo(`[OUT] ${from}: ${reply.slice(0, 80)}`);
-      } catch (err) {
-        const errMsg = err.response?.data?.message || err.message || 'Unknown error';
-        const statusCode = err.response?.status || '';
-        logError(`${statusCode ? 'HTTP ' + statusCode + ' ' : ''}${from || 'unknown'}: ${errMsg}`);
-        try {
-          await sock.sendPresenceUpdate('composing', from);
-          await new Promise(r => setTimeout(r, 1200 + Math.round(Math.random() * 800)));
-          await sock.sendMessage(from, {
-            text: 'দয়া করে একটু অপেক্ষা করুন। আমি এখনই ফিরে আসছি।'
-          });
-        } catch (sendErr) {
-          logError(`Failed to send error message: ${sendErr.message}`);
-        }
-      }
-    }
-  });
+  for (let i = 1; i <= count; i++) {
+    const id = `acc_${i}`;
+    const accPhone = process.env[`WHATSAPP_PHONE_${i}`] || phone;
+    logInfo(`Creating account ${id} (${accPhone})...`);
+    accountManager.createAccount({ id, phone: accPhone, wpApiUrl: WP_API }).catch(err => {
+      logError(`Failed to create ${id}: ${err.message}`);
+    });
+    await new Promise(r => setTimeout(r, 2000));
+  }
 
   setInterval(() => {
-    if (sock?.ws?.readyState === 1) {
-      logInfo('Heartbeat OK, connected: ' + !!sock.user);
-    } else {
-      logWarn('Heartbeat: WebSocket not ready');
+    processOutboundQueue().catch(err => logError(`Queue error: ${err.message}`));
+  }, 15000);
+
+  setInterval(() => {
+    pollServerQueue().catch(err => logError(`Server queue error: ${err.message}`));
+  }, 5000);
+
+  setInterval(() => {
+    const accounts = accountManager.getAllAccounts();
+    for (const acc of accounts) {
+      const accObj = accountManager.getAccount(acc.id);
+      if (accObj?.sock?.ws?.readyState === 1) {
+        logInfo(`[HEARTBEAT][${acc.id}] OK`);
+      }
     }
-  }, 60000);
+  }, 120000);
+
+  setInterval(() => {
+    for (const acc of accountManager.getAllAccounts()) {
+      warmup.incrementDay(acc.id);
+    }
+  }, 86400000);
 }
 
 startServer();
 startBot().catch(err => {
-  logError(`Fatal error: ${err.message}`);
+  logError(`Fatal: ${err.message}`);
   process.exit(1);
 });
