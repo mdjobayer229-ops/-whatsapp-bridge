@@ -70,10 +70,13 @@ async function createAccount(config) {
       }
       reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 300000);
-      setTimeout(() => {
-        delete accounts[id];
-        createAccount(config).catch(() => {});
-      }, delay);
+        setTimeout(() => {
+          // Clean up old account from list
+          const oldIdx = accountList.findIndex(a => a.id === id);
+          if (oldIdx >= 0) accountList.splice(oldIdx, 1);
+          delete accounts[id];
+          createAccount(config).catch(() => {});
+        }, delay);
     }
   });
 
@@ -131,8 +134,13 @@ function getAllAccounts() {
     phone: a.config.phone,
     connected: a.connected,
     uptime: Date.now() - a.createdAt,
-    warmup: warmup.getStatus(a.id)
+    warmup: warmup.getStatus(a.id),
+    qr_buffer: a.qrBuffer ? true : false
   }));
 }
 
-module.exports = { createAccount, getAccount, getConnectedAccounts, getLeastLoadedAccount, removeAccount, getAllAccounts, setIncomingHandler };
+function getAccountById(id) {
+  return accounts[id] || null;
+}
+
+module.exports = { createAccount, getAccount, getConnectedAccounts, getLeastLoadedAccount, removeAccount, getAllAccounts, setIncomingHandler, getAccountById };

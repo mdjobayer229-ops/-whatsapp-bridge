@@ -168,8 +168,12 @@ async function startServer() {
         let accountRows = accounts.map(a => {
           const w = warmupStats[a.id] || {};
           const cls = a.connected ? 'status-connected' : 'status-waiting';
-          return `<tr><td>${a.id}</td><td>${a.phone}</td><td><span class="status-badge ${cls}">${a.connected ? 'Connected' : 'Waiting'}</span></td><td>${w.day_count || '-'}</td><td>${w.limit || '-'}</td><td>${w.sent_today || 0}</td><td>${w.remaining || 0}</td><td>${Math.floor(a.uptime / 1000)}s</td></tr>`;
+          const qrImg = a.qr_buffer ? `<img src="/qr/${a.id}" style="width:200px;height:200px;border-radius:8px;margin:8px 0" />` : '';
+          return `<tr><td>${a.id}</td><td>${a.phone}</td><td><span class="status-badge ${cls}">${a.connected ? 'Connected' : 'Waiting'}</span>${!a.connected && a.qr_buffer ? '<br/>📱 Scan QR' : ''}</td><td>${w.day_count || '-'}</td><td>${w.limit || '-'}</td><td>${w.sent_today || 0}</td><td>${w.remaining || 0}</td><td>${Math.floor(a.uptime / 1000)}s</td></tr>`;
         }).join('');
+        let accountQrSections = accounts.filter(a => a.qr_buffer).map(a =>
+          `<div class="card" style="text-align:center"><h3 style="color:#69f0ae;margin-bottom:8px">📱 Scan QR for ${a.id} (${a.phone})</h3><img src="/qr/${a.id}" style="width:260px;height:260px;border-radius:12px;border:2px solid #333" /><p style="color:#888;font-size:13px;margin-top:6px">Open WhatsApp → Menu → Linked Devices → Link a Device</p></div>`
+        ).join('');
 
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
         res.end(`${HTML_HEAD}
@@ -192,6 +196,7 @@ async function startServer() {
   <div class="stat"><div class="stat-value">${queueStats.pending}</div><div class="stat-label">Queue Pending</div></div>
   <div class="stat"><div class="stat-value">${queueStats.sent}</div><div class="stat-label">Sent Today</div></div>
 </div>
+${accountQrSections}
 <h2>WhatsApp Accounts</h2>
 <div class="card">
 <table><thead><tr><th>ID</th><th>Phone</th><th>Status</th><th>Day</th><th>Limit</th><th>Sent</th><th>Remaining</th><th>Uptime</th></tr></thead><tbody>${accountRows || '<tr><td colspan="8">No accounts</td></tr>'}</tbody></table>
@@ -350,8 +355,19 @@ ${HTML_FOOT}`);
         jsonResponse(res, { generated: phones.length, message: 'Generated. Now validate with POST /numbers/validate' });
       }
 
+      else if (pathname.startsWith('/qr/')) {
+        const accId = pathname.slice(4);
+        const acc = accountManager.getAccountById(accId);
+        if (acc && acc.qrBuffer) {
+          res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-cache' });
+          res.end(acc.qrBuffer);
+        } else {
+          jsonResponse(res, { error: 'No QR available' }, 404);
+        }
+      }
+
       else {
-        jsonResponse(res, { error: 'Not found', paths: ['/health', '/dashboard', '/env', '/logs', '/contacts', '/blocklist', '/numbers/generate', '/numbers/validate', '/send', '/queue', '/queue/flush', '/warmup', '/accounts', '/accounts/remove', '/stats', '/campaign/start'] }, 404);
+        jsonResponse(res, { error: 'Not found', paths: ['/health', '/dashboard', '/env', '/logs', '/contacts', '/blocklist', '/numbers/generate', '/numbers/validate', '/send', '/queue', '/queue/flush', '/warmup', '/accounts', '/accounts/remove', '/stats', '/campaign/start', '/qr/:id'] }, 404);
       }
     } catch (err) {
       logError(`HTTP Error: ${err.message}`);
