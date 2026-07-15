@@ -40,38 +40,46 @@ async function createAccount(config) {
     connectTimeoutMs: 60000,
     keepAliveIntervalMs: 25000,
     markOnlineOnConnect: false,
-    syncFullHistory: true,
+    syncFullHistory: false,
   });
 
-  let qrBuffer = null;
-  let connected = false;
   let reconnectAttempts = 0;
+  const accountObj = { sock, id, phone, config, connected: false, qrBuffer: null, authDir, createdAt: Date.now() };
 
   sock.ev.on('creds.update', saveCreds);
 
   sock.ev.on('connection.update', async ({ connection, lastDisconnect, qr }) => {
     if (qr) {
       reconnectAttempts = 0;
+      console.log(`[${id}] QR code received, generating buffer...`);
       try {
-        qrBuffer = await QRCode.toBuffer(qr, { width: 400, margin: 2, type: 'png' });
-      } catch (_) {}
+        accountObj.qrBuffer = await QRCode.toBuffer(qr, { width: 400, margin: 2, type: 'png' });
+        console.log(`[${id}] QR buffer generated (${accountObj.qrBuffer.length} bytes)`);
+        console.log(`[${id}] Scan QR at /qr/${id} or visit /dashboard`);
+      } catch (e) {
+        console.log(`[${id}] QR buffer generation failed: ${e.message}`);
+      }
     }
 
     if (connection === 'open') {
       reconnectAttempts = 0;
-      connected = true;
+      accountObj.connected = true;
+      console.log(`[${id}] Connection opened ✓`);
     }
 
     if (connection === 'close') {
-      connected = false;
+      accountObj.connected = false;
       const reason = lastDisconnect?.error?.output?.statusCode;
+      const reasonText = lastDisconnect?.error?.message || 'unknown';
+      console.log(`[${id}] Connection closed — reason code: ${reason}, message: ${reasonText}`);
       if (reason === DisconnectReason.loggedOut) {
+        console.log(`[${id}] Logged out, removing auth dir...`);
         try { fs.rmSync(authDir, { recursive: true, force: true }); } catch (_) {}
       }
       reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 300000);
+      console.log(`[${id}] Reconnecting in ${delay}ms (attempt ${reconnectAttempts})...`);
         setTimeout(() => {
-          // Clean up old account from list
           const oldIdx = accountList.findIndex(a => a.id === id);
           if (oldIdx >= 0) accountList.splice(oldIdx, 1);
           delete accounts[id];
@@ -87,7 +95,6 @@ async function createAccount(config) {
     }
   });
 
-  const accountObj = { sock, id, phone, config, connected, qrBuffer, authDir, createdAt: Date.now() };
   accounts[id] = accountObj;
   accountList.push(accountObj);
 
